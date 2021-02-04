@@ -7,8 +7,9 @@ package dialect
 import (
 	"context"
 	"database/sql/driver"
-	"fmt"
 	"log"
+
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -88,14 +89,38 @@ func DebugWithContext(d Driver, logger func(context.Context, ...interface{})) Dr
 
 // Exec logs its params and calls the underlying driver Exec method.
 func (d *DebugDriver) Exec(ctx context.Context, query string, args, v interface{}) error {
-	d.log(ctx, fmt.Sprintf("driver.Exec: query=%v args=%v", query, args))
-	return d.Driver.Exec(ctx, query, args, v)
+	start := time.Now()
+	var err error
+	err = d.Driver.Exec(ctx, query, args, v)
+	logInfo := map[string]interface{}{
+		"driver": "driver.Exec",
+		"query":  query,
+		"args":   args,
+		"cost":   time.Since(start),
+		"err":    err,
+	}
+
+	d.log(ctx, logInfo)
+
+	return err
 }
 
 // Query logs its params and calls the underlying driver Query method.
 func (d *DebugDriver) Query(ctx context.Context, query string, args, v interface{}) error {
-	d.log(ctx, fmt.Sprintf("driver.Query: query=%v args=%v", query, args))
-	return d.Driver.Query(ctx, query, args, v)
+	start := time.Now()
+	var err error
+	err = d.Driver.Query(ctx, query, args, v)
+	logInfo := map[string]interface{}{
+		"driver": "driver.Query",
+		"query":  query,
+		"args":   args,
+		"cost":   time.Since(start),
+		"err":    err,
+	}
+
+	d.log(ctx, logInfo)
+
+	return err
 }
 
 // Tx adds an log-id for the transaction and calls the underlying driver Tx command.
@@ -105,7 +130,16 @@ func (d *DebugDriver) Tx(ctx context.Context) (Tx, error) {
 		return nil, err
 	}
 	id := uuid.New().String()
-	d.log(ctx, fmt.Sprintf("driver.Tx(%s): started", id))
+
+	start := time.Now()
+	logInfo := map[string]interface{}{
+		"driver": "Tx.started",
+		"cost":   time.Since(start),
+		"txID":   id,
+	}
+
+	d.log(ctx, logInfo)
+
 	return &DebugTx{tx, id, d.log, ctx}, nil
 }
 
@@ -119,24 +153,73 @@ type DebugTx struct {
 
 // Exec logs its params and calls the underlying transaction Exec method.
 func (d *DebugTx) Exec(ctx context.Context, query string, args, v interface{}) error {
-	d.log(ctx, fmt.Sprintf("Tx(%s).Exec: query=%v args=%v", d.id, query, args))
-	return d.Tx.Exec(ctx, query, args, v)
+	start := time.Now()
+	var err error
+	err = d.Tx.Exec(ctx, query, args, v)
+	logInfo := map[string]interface{}{
+		"driver": "Tx.Exec",
+		"query":  query,
+		"args":   args,
+		"cost":   time.Since(start),
+		"err":    err,
+		"txID":   d.id,
+	}
+
+	d.log(ctx, logInfo)
+
+	return err
 }
 
 // Query logs its params and calls the underlying transaction Query method.
 func (d *DebugTx) Query(ctx context.Context, query string, args, v interface{}) error {
-	d.log(ctx, fmt.Sprintf("Tx(%s).Query: query=%v args=%v", d.id, query, args))
-	return d.Tx.Query(ctx, query, args, v)
+	start := time.Now()
+	var err error
+	err = d.Tx.Query(ctx, query, args, v)
+	logInfo := map[string]interface{}{
+		"driver": "Tx.Query",
+		"query":  query,
+		"args":   args,
+		"cost":   time.Since(start),
+		"err":    err,
+		"txID":   d.id,
+	}
+
+	d.log(ctx, logInfo)
+
+	return err
 }
 
 // Commit logs this step and calls the underlying transaction Commit method.
 func (d *DebugTx) Commit() error {
-	d.log(d.ctx, fmt.Sprintf("Tx(%s): committed", d.id))
-	return d.Tx.Commit()
+	start := time.Now()
+	var err error
+	err = d.Tx.Commit()
+	logInfo := map[string]interface{}{
+		"driver": "Tx.Commit",
+		"cost":   time.Since(start),
+		"err":    err,
+		"txID":   d.id,
+	}
+
+	d.log(d.ctx, logInfo)
+
+	return err
+
 }
 
 // Rollback logs this step and calls the underlying transaction Rollback method.
 func (d *DebugTx) Rollback() error {
-	d.log(d.ctx, fmt.Sprintf("Tx(%s): rollbacked", d.id))
-	return d.Tx.Rollback()
+	start := time.Now()
+	var err error
+	err = d.Tx.Rollback()
+	logInfo := map[string]interface{}{
+		"driver": "Tx.Rollback",
+		"cost":   time.Since(start),
+		"err":    err,
+		"txID":   d.id,
+	}
+
+	d.log(d.ctx, logInfo)
+
+	return err
 }
