@@ -76,7 +76,15 @@ func Debug(d Driver, logger ...func(...interface{})) Driver {
 	if len(logger) == 1 {
 		logf = logger[0]
 	}
-	drv := &DebugDriver{d, func(_ context.Context, v ...interface{}) { logf(v...) }}
+	drv := &DebugDriver{
+		d,
+		func(ctx context.Context, v ...interface{}) {
+			var args []interface{}
+			args = append(args, ctx)
+			args = append(args, v...)
+			logf(args...)
+		},
+	}
 	return drv
 }
 
