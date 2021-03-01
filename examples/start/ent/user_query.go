@@ -13,13 +13,13 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/start/ent/car"
-	"github.com/facebook/ent/examples/start/ent/group"
-	"github.com/facebook/ent/examples/start/ent/predicate"
-	"github.com/facebook/ent/examples/start/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/start/ent/car"
+	"entgo.io/ent/examples/start/ent/group"
+	"entgo.io/ent/examples/start/ent/predicate"
+	"entgo.io/ent/examples/start/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -69,7 +69,7 @@ func (uq *UserQuery) QueryCars() *CarQuery {
 		if err := uq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := uq.sqlQuery()
+		selector := uq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (uq *UserQuery) QueryGroups() *GroupQuery {
 		if err := uq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := uq.sqlQuery()
+		selector := uq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -339,7 +339,7 @@ func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 		if err := uq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return uq.sqlQuery(), nil
+		return uq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -561,7 +561,7 @@ func (uq *UserQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (uq *UserQuery) sqlQuery() *sql.Selector {
+func (uq *UserQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(uq.driver.Dialect())
 	t1 := builder.Table(user.Table)
 	selector := builder.Select(t1.Columns(user.Columns...)...).From(t1)
@@ -856,7 +856,7 @@ func (us *UserSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := us.prepareQuery(ctx); err != nil {
 		return err
 	}
-	us.sql = us.UserQuery.sqlQuery()
+	us.sql = us.UserQuery.sqlQuery(ctx)
 	return us.sqlScan(ctx, v)
 }
 

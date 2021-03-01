@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
 	"github.com/google/uuid"
 )
 
@@ -245,6 +245,14 @@ func OptionalUint32(v uint32) predicate.FieldType {
 func OptionalUint64(v uint64) predicate.FieldType {
 	return predicate.FieldType(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldOptionalUint64), v))
+	})
+}
+
+// Duration applies equality check predicate on the "duration" field. It's identical to DurationEQ.
+func Duration(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDuration), vc))
 	})
 }
 
@@ -2239,6 +2247,102 @@ func OptionalUint64NotNil() predicate.FieldType {
 	})
 }
 
+// DurationEQ applies the EQ predicate on the "duration" field.
+func DurationEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationNEQ applies the NEQ predicate on the "duration" field.
+func DurationNEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationIn applies the In predicate on the "duration" field.
+func DurationIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.In(s.C(FieldDuration), v...))
+	})
+}
+
+// DurationNotIn applies the NotIn predicate on the "duration" field.
+func DurationNotIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(s *sql.Selector) {
+		// if not arguments were provided, append the FALSE constants,
+		// since we can't apply "IN ()". This will make this predicate falsy.
+		if len(v) == 0 {
+			s.Where(sql.False())
+			return
+		}
+		s.Where(sql.NotIn(s.C(FieldDuration), v...))
+	})
+}
+
+// DurationGT applies the GT predicate on the "duration" field.
+func DurationGT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationGTE applies the GTE predicate on the "duration" field.
+func DurationGTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationLT applies the LT predicate on the "duration" field.
+func DurationLT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationLTE applies the LTE predicate on the "duration" field.
+func DurationLTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldDuration), vc))
+	})
+}
+
+// DurationIsNil applies the IsNil predicate on the "duration" field.
+func DurationIsNil() predicate.FieldType {
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldDuration)))
+	})
+}
+
+// DurationNotNil applies the NotNil predicate on the "duration" field.
+func DurationNotNil() predicate.FieldType {
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldDuration)))
+	})
+}
+
 // StateEQ applies the EQ predicate on the "state" field.
 func StateEQ(v State) predicate.FieldType {
 	return predicate.FieldType(func(s *sql.Selector) {
@@ -3338,6 +3442,20 @@ func LinkContainsFold(v schema.Link) predicate.FieldType {
 	vc := v.String()
 	return predicate.FieldType(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldLink), vc))
+	})
+}
+
+// LinkOtherIsNil applies the IsNil predicate on the "link_other" field.
+func LinkOtherIsNil() predicate.FieldType {
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldLinkOther)))
+	})
+}
+
+// LinkOtherNotNil applies the NotNil predicate on the "link_other" field.
+func LinkOtherNotNil() predicate.FieldType {
+	return predicate.FieldType(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldLinkOther)))
 	})
 }
 

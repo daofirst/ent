@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/privacy/ent/task"
-	"github.com/facebook/ent/entc/integration/privacy/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/privacy/ent/task"
+	"entgo.io/ent/entc/integration/privacy/ent/user"
 	"github.com/google/uuid"
 )
 
@@ -38,9 +38,9 @@ type Task struct {
 // TaskEdges holds the relations/edges for other nodes in the graph.
 type TaskEdges struct {
 	// Teams holds the value of the teams edge.
-	Teams []*Team
+	Teams []*Team `json:"teams,omitempty"`
 	// Owner holds the value of the owner edge.
-	Owner *User
+	Owner *User `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

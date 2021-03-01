@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/goods"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/goods"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // GoodsQuery is the builder for querying Goods entities.
@@ -252,7 +252,7 @@ func (gq *GoodsQuery) GroupBy(field string, fields ...string) *GoodsGroupBy {
 		if err := gq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return gq.sqlQuery(), nil
+		return gq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -364,7 +364,7 @@ func (gq *GoodsQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (gq *GoodsQuery) sqlQuery() *sql.Selector {
+func (gq *GoodsQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(gq.driver.Dialect())
 	t1 := builder.Table(goods.Table)
 	selector := builder.Select(t1.Columns(goods.Columns...)...).From(t1)
@@ -659,7 +659,7 @@ func (gs *GoodsSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := gs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gs.sql = gs.GoodsQuery.sqlQuery()
+	gs.sql = gs.GoodsQuery.sqlQuery(ctx)
 	return gs.sqlScan(ctx, v)
 }
 

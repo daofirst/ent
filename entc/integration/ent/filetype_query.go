@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // FileTypeQuery is the builder for querying FileType entities.
@@ -67,7 +67,7 @@ func (ftq *FileTypeQuery) QueryFiles() *FileQuery {
 		if err := ftq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := ftq.sqlQuery()
+		selector := ftq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (ftq *FileTypeQuery) GroupBy(field string, fields ...string) *FileTypeGroup
 		if err := ftq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return ftq.sqlQuery(), nil
+		return ftq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -460,7 +460,7 @@ func (ftq *FileTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (ftq *FileTypeQuery) sqlQuery() *sql.Selector {
+func (ftq *FileTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(ftq.driver.Dialect())
 	t1 := builder.Table(filetype.Table)
 	selector := builder.Select(t1.Columns(filetype.Columns...)...).From(t1)
@@ -755,7 +755,7 @@ func (fts *FileTypeSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := fts.prepareQuery(ctx); err != nil {
 		return err
 	}
-	fts.sql = fts.FileTypeQuery.sqlQuery()
+	fts.sql = fts.FileTypeQuery.sqlQuery(ctx)
 	return fts.sqlScan(ctx, v)
 }
 

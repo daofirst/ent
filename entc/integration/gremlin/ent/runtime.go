@@ -11,14 +11,14 @@ import (
 	"net"
 	"time"
 
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/card"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/file"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/group"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/task"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/card"
+	"entgo.io/ent/entc/integration/gremlin/ent/fieldtype"
+	"entgo.io/ent/entc/integration/gremlin/ent/file"
+	"entgo.io/ent/entc/integration/gremlin/ent/group"
+	"entgo.io/ent/entc/integration/gremlin/ent/groupinfo"
+	"entgo.io/ent/entc/integration/gremlin/ent/task"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -55,27 +55,27 @@ func init() {
 	// fieldtype.ValidateOptionalInt32Validator is a validator for the "validate_optional_int32" field. It is called by the builders before save.
 	fieldtype.ValidateOptionalInt32Validator = fieldtypeDescValidateOptionalInt32.Validators[0].(func(int32) error)
 	// fieldtypeDescNdir is the schema descriptor for ndir field.
-	fieldtypeDescNdir := fieldtypeFields[27].Descriptor()
+	fieldtypeDescNdir := fieldtypeFields[28].Descriptor()
 	// fieldtype.NdirValidator is a validator for the "ndir" field. It is called by the builders before save.
 	fieldtype.NdirValidator = fieldtypeDescNdir.Validators[0].(func(string) error)
 	// fieldtypeDescStr is the schema descriptor for str field.
-	fieldtypeDescStr := fieldtypeFields[28].Descriptor()
+	fieldtypeDescStr := fieldtypeFields[29].Descriptor()
 	// fieldtype.DefaultStr holds the default value on creation for the str field.
 	fieldtype.DefaultStr = fieldtypeDescStr.Default.(func() sql.NullString)
 	// fieldtypeDescNullStr is the schema descriptor for null_str field.
-	fieldtypeDescNullStr := fieldtypeFields[29].Descriptor()
+	fieldtypeDescNullStr := fieldtypeFields[30].Descriptor()
 	// fieldtype.DefaultNullStr holds the default value on creation for the null_str field.
 	fieldtype.DefaultNullStr = fieldtypeDescNullStr.Default.(func() sql.NullString)
 	// fieldtypeDescLink is the schema descriptor for link field.
-	fieldtypeDescLink := fieldtypeFields[30].Descriptor()
+	fieldtypeDescLink := fieldtypeFields[31].Descriptor()
 	// fieldtype.LinkValidator is a validator for the "link" field. It is called by the builders before save.
 	fieldtype.LinkValidator = fieldtypeDescLink.Validators[0].(func(string) error)
 	// fieldtypeDescIP is the schema descriptor for ip field.
-	fieldtypeDescIP := fieldtypeFields[36].Descriptor()
+	fieldtypeDescIP := fieldtypeFields[38].Descriptor()
 	// fieldtype.DefaultIP holds the default value on creation for the ip field.
 	fieldtype.DefaultIP = fieldtypeDescIP.Default.(func() net.IP)
 	// fieldtypeDescMAC is the schema descriptor for mac field.
-	fieldtypeDescMAC := fieldtypeFields[45].Descriptor()
+	fieldtypeDescMAC := fieldtypeFields[47].Descriptor()
 	// fieldtype.MACValidator is a validator for the "mac" field. It is called by the builders before save.
 	fieldtype.MACValidator = fieldtypeDescMAC.Validators[0].(func(string) error)
 	fileFields := schema.File{}.Fields()

@@ -12,14 +12,14 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/file"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/filetype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/gremlin/ent/file"
+	"entgo.io/ent/entc/integration/gremlin/ent/filetype"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
 )
 
 // FileQuery is the builder for querying File entities.
@@ -70,7 +70,7 @@ func (fq *FileQuery) QueryOwner() *UserQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		gremlin := fq.gremlinQuery()
+		gremlin := fq.gremlinQuery(ctx)
 		fromU = gremlin.InE(user.FilesLabel).OutV()
 		return fromU, nil
 	}
@@ -84,7 +84,7 @@ func (fq *FileQuery) QueryType() *FileTypeQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		gremlin := fq.gremlinQuery()
+		gremlin := fq.gremlinQuery(ctx)
 		fromU = gremlin.InE(filetype.FilesLabel).OutV()
 		return fromU, nil
 	}
@@ -98,7 +98,7 @@ func (fq *FileQuery) QueryField() *FieldTypeQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		gremlin := fq.gremlinQuery()
+		gremlin := fq.gremlinQuery(ctx)
 		fromU = gremlin.OutE(file.FieldLabel).InV()
 		return fromU, nil
 	}
@@ -350,7 +350,7 @@ func (fq *FileQuery) GroupBy(field string, fields ...string) *FileGroupBy {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return fq.gremlinQuery(), nil
+		return fq.gremlinQuery(ctx), nil
 	}
 	return group
 }
@@ -386,7 +386,7 @@ func (fq *FileQuery) prepareQuery(ctx context.Context) error {
 
 func (fq *FileQuery) gremlinAll(ctx context.Context) ([]*File, error) {
 	res := &gremlin.Response{}
-	traversal := fq.gremlinQuery()
+	traversal := fq.gremlinQuery(ctx)
 	if len(fq.fields) > 0 {
 		fields := make([]interface{}, len(fq.fields))
 		for i, f := range fq.fields {
@@ -410,7 +410,7 @@ func (fq *FileQuery) gremlinAll(ctx context.Context) ([]*File, error) {
 
 func (fq *FileQuery) gremlinCount(ctx context.Context) (int, error) {
 	res := &gremlin.Response{}
-	query, bindings := fq.gremlinQuery().Count().Query()
+	query, bindings := fq.gremlinQuery(ctx).Count().Query()
 	if err := fq.driver.Exec(ctx, query, bindings, res); err != nil {
 		return 0, err
 	}
@@ -419,14 +419,14 @@ func (fq *FileQuery) gremlinCount(ctx context.Context) (int, error) {
 
 func (fq *FileQuery) gremlinExist(ctx context.Context) (bool, error) {
 	res := &gremlin.Response{}
-	query, bindings := fq.gremlinQuery().HasNext().Query()
+	query, bindings := fq.gremlinQuery(ctx).HasNext().Query()
 	if err := fq.driver.Exec(ctx, query, bindings, res); err != nil {
 		return false, err
 	}
 	return res.ReadBool()
 }
 
-func (fq *FileQuery) gremlinQuery() *dsl.Traversal {
+func (fq *FileQuery) gremlinQuery(context.Context) *dsl.Traversal {
 	v := g.V().HasLabel(file.Label)
 	if fq.gremlin != nil {
 		v = fq.gremlin.Clone()
@@ -730,7 +730,7 @@ func (fs *FileSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := fs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	fs.gremlin = fs.FileQuery.gremlinQuery()
+	fs.gremlin = fs.FileQuery.gremlinQuery(ctx)
 	return fs.gremlinScan(ctx, v)
 }
 

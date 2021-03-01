@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/idtype/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/idtype/ent/user"
 )
 
 // User is the model entity for the User schema.
@@ -30,11 +30,11 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Spouse holds the value of the spouse edge.
-	Spouse *User
+	Spouse *User `json:"spouse,omitempty"`
 	// Followers holds the value of the followers edge.
-	Followers []*User
+	Followers []*User `json:"followers,omitempty"`
 	// Following holds the value of the following edge.
-	Following []*User
+	Following []*User `json:"following,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool

@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/o2o2types/ent/card"
-	"github.com/facebook/ent/examples/o2o2types/ent/predicate"
-	"github.com/facebook/ent/examples/o2o2types/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/o2o2types/ent/card"
+	"entgo.io/ent/examples/o2o2types/ent/predicate"
+	"entgo.io/ent/examples/o2o2types/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // CardUpdate is the builder for updating Card entities.
@@ -332,6 +332,13 @@ func (cuo *CardUpdateOne) sqlSave(ctx context.Context) (_node *Card, err error) 
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Card.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if ps := cuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := cuo.mutation.Expired(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeTime,

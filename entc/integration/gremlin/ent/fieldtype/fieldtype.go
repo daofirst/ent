@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/facebook/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/role"
 )
 
 const (
@@ -61,6 +61,8 @@ const (
 	FieldOptionalUint32 = "optional_uint32"
 	// FieldOptionalUint64 holds the string denoting the optional_uint64 field in the database.
 	FieldOptionalUint64 = "optional_uint64"
+	// FieldDuration holds the string denoting the duration field in the database.
+	FieldDuration = "duration"
 	// FieldState holds the string denoting the state field in the database.
 	FieldState = "state"
 	// FieldOptionalFloat holds the string denoting the optional_float field in the database.
@@ -81,6 +83,8 @@ const (
 	FieldNullStr = "null_str"
 	// FieldLink holds the string denoting the link field in the database.
 	FieldLink = "link"
+	// FieldLinkOther holds the string denoting the link_other field in the database.
+	FieldLinkOther = "link_other"
 	// FieldNullLink holds the string denoting the null_link field in the database.
 	FieldNullLink = "null_link"
 	// FieldActive holds the string denoting the active field in the database.

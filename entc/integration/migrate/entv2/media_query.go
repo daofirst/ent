@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/media"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/migrate/entv2/media"
+	"entgo.io/ent/entc/integration/migrate/entv2/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // MediaQuery is the builder for querying Media entities.
@@ -265,7 +265,7 @@ func (mq *MediaQuery) GroupBy(field string, fields ...string) *MediaGroupBy {
 		if err := mq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return mq.sqlQuery(), nil
+		return mq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -388,7 +388,7 @@ func (mq *MediaQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (mq *MediaQuery) sqlQuery() *sql.Selector {
+func (mq *MediaQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(mq.driver.Dialect())
 	t1 := builder.Table(media.Table)
 	selector := builder.Select(t1.Columns(media.Columns...)...).From(t1)
@@ -683,7 +683,7 @@ func (ms *MediaSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := ms.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ms.sql = ms.MediaQuery.sqlQuery()
+	ms.sql = ms.MediaQuery.sqlQuery(ctx)
 	return ms.sqlScan(ctx, v)
 }
 

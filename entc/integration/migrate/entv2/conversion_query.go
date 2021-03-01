@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/conversion"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/migrate/entv2/conversion"
+	"entgo.io/ent/entc/integration/migrate/entv2/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // ConversionQuery is the builder for querying Conversion entities.
@@ -265,7 +265,7 @@ func (cq *ConversionQuery) GroupBy(field string, fields ...string) *ConversionGr
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return cq.sqlQuery(), nil
+		return cq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -388,7 +388,7 @@ func (cq *ConversionQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cq *ConversionQuery) sqlQuery() *sql.Selector {
+func (cq *ConversionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(cq.driver.Dialect())
 	t1 := builder.Table(conversion.Table)
 	selector := builder.Select(t1.Columns(conversion.Columns...)...).From(t1)
@@ -683,7 +683,7 @@ func (cs *ConversionSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := cs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	cs.sql = cs.ConversionQuery.sqlQuery()
+	cs.sql = cs.ConversionQuery.sqlQuery(ctx)
 	return cs.sqlScan(ctx, v)
 }
 

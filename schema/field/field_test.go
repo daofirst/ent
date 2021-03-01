@@ -6,6 +6,7 @@ package field_test
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,8 +15,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/schema/field"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -24,10 +25,12 @@ import (
 func TestInt(t *testing.T) {
 	fd := field.Int("age").
 		Positive().
+		Comment("comment").
 		Descriptor()
 	assert.Equal(t, "age", fd.Name)
 	assert.Equal(t, field.TypeInt, fd.Info.Type)
 	assert.Len(t, fd.Validators, 1)
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.Int("age").
 		Default(10).
@@ -67,7 +70,7 @@ func TestInt(t *testing.T) {
 	fd = field.Int("active").GoType(Count(0)).Descriptor()
 	assert.NoError(t, fd.Err)
 	assert.Equal(t, "field_test.Count", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.Count", fd.Info.String())
 	assert.False(t, fd.Info.Nillable)
 	assert.False(t, fd.Info.ValueScanner())
@@ -90,12 +93,28 @@ func TestInt(t *testing.T) {
 	assert.Error(t, fd.Err)
 }
 
+func TestInt_DefaultFunc(t *testing.T) {
+	type CustomInt int
+
+	f1 := func() CustomInt { return 1000 }
+	fd := field.Int("id").DefaultFunc(f1).GoType(CustomInt(0)).Descriptor()
+	assert.NoError(t, fd.Err)
+
+	fd = field.Int("id").DefaultFunc(f1).Descriptor()
+	assert.Error(t, fd.Err, "`var _ int = f1()` should fail")
+
+	f2 := func() int { return 1000 }
+	fd = field.Int("dir").GoType(CustomInt(0)).DefaultFunc(f2).Descriptor()
+	assert.Error(t, fd.Err, "`var _ CustomInt = f2()` should fail")
+}
+
 func TestFloat(t *testing.T) {
-	f := field.Float("age").Positive()
+	f := field.Float("age").Comment("comment").Positive()
 	fd := f.Descriptor()
 	assert.Equal(t, "age", fd.Name)
 	assert.Equal(t, field.TypeFloat64, fd.Info.Type)
 	assert.Len(t, fd.Validators, 1)
+	assert.Equal(t, "comment", fd.Comment)
 
 	f = field.Float("age").Min(2.5).Max(5)
 	fd = f.Descriptor()
@@ -106,7 +125,7 @@ func TestFloat(t *testing.T) {
 	fd = field.Float("active").GoType(Count(0)).Descriptor()
 	assert.NoError(t, fd.Err)
 	assert.Equal(t, "field_test.Count", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.Count", fd.Info.String())
 	assert.False(t, fd.Info.Nillable)
 	assert.False(t, fd.Info.ValueScanner())
@@ -128,18 +147,19 @@ func TestFloat(t *testing.T) {
 }
 
 func TestBool(t *testing.T) {
-	fd := field.Bool("active").Default(true).Immutable().Descriptor()
+	fd := field.Bool("active").Default(true).Comment("comment").Immutable().Descriptor()
 	assert.Equal(t, "active", fd.Name)
 	assert.Equal(t, field.TypeBool, fd.Info.Type)
 	assert.NotNil(t, fd.Default)
 	assert.True(t, fd.Immutable)
 	assert.Equal(t, true, fd.Default)
+	assert.Equal(t, "comment", fd.Comment)
 
 	type Status bool
 	fd = field.Bool("active").GoType(Status(false)).Descriptor()
 	assert.NoError(t, fd.Err)
 	assert.Equal(t, "field_test.Status", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.Status", fd.Info.String())
 	assert.False(t, fd.Info.Nillable)
 	assert.False(t, fd.Info.ValueScanner())
@@ -161,11 +181,12 @@ func TestBool(t *testing.T) {
 }
 
 func TestBytes(t *testing.T) {
-	fd := field.Bytes("active").Default([]byte("{}")).Descriptor()
+	fd := field.Bytes("active").Default([]byte("{}")).Comment("comment").Descriptor()
 	assert.Equal(t, "active", fd.Name)
 	assert.Equal(t, field.TypeBytes, fd.Info.Type)
 	assert.NotNil(t, fd.Default)
 	assert.Equal(t, []byte("{}"), fd.Default)
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.Bytes("ip").GoType(net.IP("127.0.0.1")).Descriptor()
 	assert.NoError(t, fd.Err)
@@ -256,11 +277,13 @@ func TestString(t *testing.T) {
 		DefaultFunc(func() string {
 			return "Ent"
 		}).
+		Comment("comment").
 		Descriptor()
 
 	assert.Equal(t, "name", fd.Name)
 	assert.Equal(t, field.TypeString, fd.Info.Type)
 	assert.Equal(t, "Ent", fd.Default.(func() string)())
+	assert.Equal(t, "comment", fd.Comment)
 
 	re := regexp.MustCompile("[a-zA-Z0-9]")
 	f := field.String("name").Unique().Match(re).Validate(func(string) error { return nil }).Sensitive()
@@ -303,7 +326,7 @@ func TestString(t *testing.T) {
 	}
 	fd = field.String("nullable_url").GoType(&tURL{}).Descriptor()
 	assert.Equal(t, "field_test.tURL", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.tURL", fd.Info.String())
 	assert.True(t, fd.Info.ValueScanner())
 	assert.True(t, fd.Info.Stringer())
@@ -322,12 +345,14 @@ func TestTime(t *testing.T) {
 		Default(func() time.Time {
 			return now
 		}).
+		Comment("comment").
 		Descriptor()
 	assert.Equal(t, "created_at", fd.Name)
 	assert.Equal(t, field.TypeTime, fd.Info.Type)
 	assert.Equal(t, "time.Time", fd.Info.Type.String())
 	assert.NotNil(t, fd.Default)
 	assert.Equal(t, now, fd.Default.(func() time.Time)())
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.Time("updated_at").
 		UpdateDefault(func() time.Time {
@@ -341,7 +366,7 @@ func TestTime(t *testing.T) {
 	fd = field.Time("deleted_at").GoType(Time{}).Descriptor()
 	assert.NoError(t, fd.Err)
 	assert.Equal(t, "field_test.Time", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.Time", fd.Info.String())
 	assert.False(t, fd.Info.Nillable)
 	assert.False(t, fd.Info.ValueScanner())
@@ -365,12 +390,14 @@ func TestTime(t *testing.T) {
 func TestJSON(t *testing.T) {
 	fd := field.JSON("name", map[string]string{}).
 		Optional().
+		Comment("comment").
 		Descriptor()
 	assert.True(t, fd.Optional)
 	assert.Empty(t, fd.Info.PkgPath)
 	assert.Equal(t, "name", fd.Name)
 	assert.Equal(t, field.TypeJSON, fd.Info.Type)
 	assert.Equal(t, "map[string]string", fd.Info.String())
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.JSON("dir", http.Dir("dir")).
 		Optional().
@@ -423,12 +450,14 @@ func TestField_Enums(t *testing.T) {
 			"master",
 		).
 		Default("user").
+		Comment("comment").
 		Descriptor()
 	assert.Equal(t, "role", fd.Name)
 	assert.Equal(t, "user", fd.Enums[0].V)
 	assert.Equal(t, "admin", fd.Enums[1].V)
 	assert.Equal(t, "master", fd.Enums[2].V)
 	assert.Equal(t, "user", fd.Default)
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.Enum("role").
 		NamedValues("USER", "user").
@@ -442,7 +471,7 @@ func TestField_Enums(t *testing.T) {
 	fd = field.Enum("role").GoType(Role("")).Descriptor()
 	assert.NoError(t, fd.Err)
 	assert.Equal(t, "field_test.Role", fd.Info.Ident)
-	assert.Equal(t, "github.com/facebook/ent/schema/field_test", fd.Info.PkgPath)
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
 	assert.Equal(t, "field_test.Role", fd.Info.String())
 	assert.False(t, fd.Info.Nillable)
 	assert.False(t, fd.Info.ValueScanner())
@@ -454,6 +483,7 @@ func TestField_UUID(t *testing.T) {
 	fd := field.UUID("id", uuid.UUID{}).
 		Unique().
 		Default(uuid.New).
+		Comment("comment").
 		Descriptor()
 	assert.Equal(t, "id", fd.Name)
 	assert.True(t, fd.Unique)
@@ -461,11 +491,53 @@ func TestField_UUID(t *testing.T) {
 	assert.Equal(t, "github.com/google/uuid", fd.Info.PkgPath)
 	assert.NotNil(t, fd.Default)
 	assert.NotEmpty(t, fd.Default.(func() uuid.UUID)())
+	assert.Equal(t, "comment", fd.Comment)
 
 	fd = field.UUID("id", uuid.UUID{}).
 		Default(uuid.UUID{}).
 		Descriptor()
 	assert.EqualError(t, fd.Err, "expect type (func() uuid.UUID) for uuid default value")
+}
+
+type custom struct {
+}
+
+func (c *custom) Scan(_ interface{}) (err error) {
+	return nil
+}
+
+func (c custom) Value() (driver.Value, error) {
+	return nil, nil
+}
+
+func TestField_Other(t *testing.T) {
+	fd := field.Other("other", &custom{}).
+		Unique().
+		Default(custom{}).
+		SchemaType(map[string]string{dialect.Postgres: "varchar"}).
+		Descriptor()
+	assert.NoError(t, fd.Err)
+	assert.Equal(t, "other", fd.Name)
+	assert.True(t, fd.Unique)
+	assert.Equal(t, "field_test.custom", fd.Info.String())
+	assert.Equal(t, "entgo.io/ent/schema/field_test", fd.Info.PkgPath)
+	assert.NotNil(t, fd.Default)
+
+	fd = field.Other("other", &custom{}).
+		Descriptor()
+	assert.Error(t, fd.Err, "missing SchemaType option")
+
+	fd = field.Other("other", &custom{}).
+		SchemaType(map[string]string{dialect.Postgres: "varchar"}).
+		Default(func() custom { return custom{} }).
+		Descriptor()
+	assert.NoError(t, fd.Err)
+
+	fd = field.Other("other", &custom{}).
+		SchemaType(map[string]string{dialect.Postgres: "varchar"}).
+		Default(func() *custom { return &custom{} }).
+		Descriptor()
+	assert.Error(t, fd.Err, "invalid default value")
 }
 
 func TestTypeString(t *testing.T) {

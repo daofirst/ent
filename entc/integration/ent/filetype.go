@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/filetype"
 )
 
 // FileType is the model entity for the FileType schema.
@@ -33,7 +33,7 @@ type FileType struct {
 // FileTypeEdges holds the relations/edges for other nodes in the graph.
 type FileTypeEdges struct {
 	// Files holds the value of the files edge.
-	Files []*File
+	Files []*File `json:"files,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

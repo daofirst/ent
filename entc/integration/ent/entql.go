@@ -7,26 +7,26 @@
 package ent
 
 import (
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/comment"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/goods"
-	"github.com/facebook/ent/entc/integration/ent/group"
-	"github.com/facebook/ent/entc/integration/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/ent/item"
-	"github.com/facebook/ent/entc/integration/ent/node"
-	"github.com/facebook/ent/entc/integration/ent/pet"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/spec"
-	"github.com/facebook/ent/entc/integration/ent/task"
-	"github.com/facebook/ent/entc/integration/ent/user"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/comment"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/goods"
+	"entgo.io/ent/entc/integration/ent/group"
+	"entgo.io/ent/entc/integration/ent/groupinfo"
+	"entgo.io/ent/entc/integration/ent/item"
+	"entgo.io/ent/entc/integration/ent/node"
+	"entgo.io/ent/entc/integration/ent/pet"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/spec"
+	"entgo.io/ent/entc/integration/ent/task"
+	"entgo.io/ent/entc/integration/ent/user"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entql"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entql"
+	"entgo.io/ent/schema/field"
 )
 
 // schemaGraph holds a representation of ent/schema at runtime.
@@ -97,6 +97,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			fieldtype.FieldOptionalUint16:        {Type: field.TypeUint16, Column: fieldtype.FieldOptionalUint16},
 			fieldtype.FieldOptionalUint32:        {Type: field.TypeUint32, Column: fieldtype.FieldOptionalUint32},
 			fieldtype.FieldOptionalUint64:        {Type: field.TypeUint64, Column: fieldtype.FieldOptionalUint64},
+			fieldtype.FieldDuration:              {Type: field.TypeInt64, Column: fieldtype.FieldDuration},
 			fieldtype.FieldState:                 {Type: field.TypeEnum, Column: fieldtype.FieldState},
 			fieldtype.FieldOptionalFloat:         {Type: field.TypeFloat64, Column: fieldtype.FieldOptionalFloat},
 			fieldtype.FieldOptionalFloat32:       {Type: field.TypeFloat32, Column: fieldtype.FieldOptionalFloat32},
@@ -107,6 +108,7 @@ var schemaGraph = func() *sqlgraph.Schema {
 			fieldtype.FieldStr:                   {Type: field.TypeString, Column: fieldtype.FieldStr},
 			fieldtype.FieldNullStr:               {Type: field.TypeString, Column: fieldtype.FieldNullStr},
 			fieldtype.FieldLink:                  {Type: field.TypeString, Column: fieldtype.FieldLink},
+			fieldtype.FieldLinkOther:             {Type: field.TypeOther, Column: fieldtype.FieldLinkOther},
 			fieldtype.FieldNullLink:              {Type: field.TypeString, Column: fieldtype.FieldNullLink},
 			fieldtype.FieldActive:                {Type: field.TypeBool, Column: fieldtype.FieldActive},
 			fieldtype.FieldNullActive:            {Type: field.TypeBool, Column: fieldtype.FieldNullActive},
@@ -912,6 +914,11 @@ func (f *FieldTypeFilter) WhereOptionalUint64(p entql.Uint64P) {
 	f.Where(p.Field(fieldtype.FieldOptionalUint64))
 }
 
+// WhereDuration applies the entql int64 predicate on the duration field.
+func (f *FieldTypeFilter) WhereDuration(p entql.Int64P) {
+	f.Where(p.Field(fieldtype.FieldDuration))
+}
+
 // WhereState applies the entql string predicate on the state field.
 func (f *FieldTypeFilter) WhereState(p entql.StringP) {
 	f.Where(p.Field(fieldtype.FieldState))
@@ -960,6 +967,11 @@ func (f *FieldTypeFilter) WhereNullStr(p entql.StringP) {
 // WhereLink applies the entql string predicate on the link field.
 func (f *FieldTypeFilter) WhereLink(p entql.StringP) {
 	f.Where(p.Field(fieldtype.FieldLink))
+}
+
+// WhereLinkOther applies the entql other predicate on the link_other field.
+func (f *FieldTypeFilter) WhereLinkOther(p entql.OtherP) {
+	f.Where(p.Field(fieldtype.FieldLinkOther))
 }
 
 // WhereNullLink applies the entql string predicate on the null_link field.

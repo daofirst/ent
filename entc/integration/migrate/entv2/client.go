@@ -11,19 +11,19 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/facebook/ent/entc/integration/migrate/entv2/migrate"
+	"entgo.io/ent/entc/integration/migrate/entv2/migrate"
 
-	"github.com/facebook/ent/entc/integration/migrate/entv2/car"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/conversion"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/customtype"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/group"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/media"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/pet"
-	"github.com/facebook/ent/entc/integration/migrate/entv2/user"
+	"entgo.io/ent/entc/integration/migrate/entv2/car"
+	"entgo.io/ent/entc/integration/migrate/entv2/conversion"
+	"entgo.io/ent/entc/integration/migrate/entv2/customtype"
+	"entgo.io/ent/entc/integration/migrate/entv2/group"
+	"entgo.io/ent/entc/integration/migrate/entv2/media"
+	"entgo.io/ent/entc/integration/migrate/entv2/pet"
+	"entgo.io/ent/entc/integration/migrate/entv2/user"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -93,7 +93,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("entv2: starting a transaction: %v", err)
 	}
-	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = tx
 	return &Tx{
 		ctx:        ctx,
 		config:     cfg,
@@ -112,11 +113,14 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	if _, ok := c.driver.(*txDriver); ok {
 		return nil, fmt.Errorf("ent: cannot start a transaction within a transaction")
 	}
-	tx, err := c.driver.(*sql.Driver).BeginTx(ctx, opts)
+	tx, err := c.driver.(interface {
+		BeginTx(context.Context, *sql.TxOptions) (dialect.Tx, error)
+	}).BeginTx(ctx, opts)
 	if err != nil {
 		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
 	}
-	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
 		config:     cfg,
 		Car:        NewCarClient(cfg),
@@ -140,7 +144,8 @@ func (c *Client) Debug() *Client {
 	if c.debug {
 		return c
 	}
-	cfg := config{driver: dialect.Debug(c.driver, c.log), log: c.log, debug: true, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = dialect.Debug(c.driver, c.log)
 	client := &Client{config: cfg}
 	client.init()
 	return client

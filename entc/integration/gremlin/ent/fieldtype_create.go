@@ -15,12 +15,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/fieldtype"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/fieldtype"
 	"github.com/google/uuid"
 )
 
@@ -285,6 +285,20 @@ func (ftc *FieldTypeCreate) SetNillableOptionalUint64(u *uint64) *FieldTypeCreat
 	return ftc
 }
 
+// SetDuration sets the "duration" field.
+func (ftc *FieldTypeCreate) SetDuration(t time.Duration) *FieldTypeCreate {
+	ftc.mutation.SetDuration(t)
+	return ftc
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftc *FieldTypeCreate) SetNillableDuration(t *time.Duration) *FieldTypeCreate {
+	if t != nil {
+		ftc.SetDuration(*t)
+	}
+	return ftc
+}
+
 // SetState sets the "state" field.
 func (ftc *FieldTypeCreate) SetState(f fieldtype.State) *FieldTypeCreate {
 	ftc.mutation.SetState(f)
@@ -398,6 +412,12 @@ func (ftc *FieldTypeCreate) SetNullStr(ss sql.NullString) *FieldTypeCreate {
 // SetLink sets the "link" field.
 func (ftc *FieldTypeCreate) SetLink(s schema.Link) *FieldTypeCreate {
 	ftc.mutation.SetLink(s)
+	return ftc
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftc *FieldTypeCreate) SetLinkOther(s schema.Link) *FieldTypeCreate {
+	ftc.mutation.SetLinkOther(s)
 	return ftc
 }
 
@@ -765,6 +785,9 @@ func (ftc *FieldTypeCreate) gremlin() *dsl.Traversal {
 	if value, ok := ftc.mutation.OptionalUint64(); ok {
 		v.Property(dsl.Single, fieldtype.FieldOptionalUint64, value)
 	}
+	if value, ok := ftc.mutation.Duration(); ok {
+		v.Property(dsl.Single, fieldtype.FieldDuration, value)
+	}
 	if value, ok := ftc.mutation.State(); ok {
 		v.Property(dsl.Single, fieldtype.FieldState, value)
 	}
@@ -794,6 +817,9 @@ func (ftc *FieldTypeCreate) gremlin() *dsl.Traversal {
 	}
 	if value, ok := ftc.mutation.Link(); ok {
 		v.Property(dsl.Single, fieldtype.FieldLink, value)
+	}
+	if value, ok := ftc.mutation.LinkOther(); ok {
+		v.Property(dsl.Single, fieldtype.FieldLinkOther, value)
 	}
 	if value, ok := ftc.mutation.NullLink(); ok {
 		v.Property(dsl.Single, fieldtype.FieldNullLink, value)

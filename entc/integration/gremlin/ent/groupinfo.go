@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin"
 )
 
 // GroupInfo is the model entity for the GroupInfo schema.
@@ -30,7 +30,7 @@ type GroupInfo struct {
 // GroupInfoEdges holds the relations/edges for other nodes in the graph.
 type GroupInfoEdges struct {
 	// Groups holds the value of the groups edge.
-	Groups []*Group
+	Groups []*Group `json:"groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

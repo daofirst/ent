@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/node"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/entc/integration/gremlin/ent/node"
 )
 
 // Node is the model entity for the Node schema.
@@ -29,9 +29,9 @@ type Node struct {
 // NodeEdges holds the relations/edges for other nodes in the graph.
 type NodeEdges struct {
 	// Prev holds the value of the prev edge.
-	Prev *Node `gqlgen:prev`
+	Prev *Node `json:"prev,omitempty" gqlgen:"prev"`
 	// Next holds the value of the next edge.
-	Next *Node `gqlgen:next`
+	Next *Node `json:"next,omitempty" gqlgen:"next"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

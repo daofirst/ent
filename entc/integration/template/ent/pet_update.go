@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/template/ent/pet"
-	"github.com/facebook/ent/entc/integration/template/ent/predicate"
-	"github.com/facebook/ent/entc/integration/template/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/template/ent/pet"
+	"entgo.io/ent/entc/integration/template/ent/predicate"
+	"entgo.io/ent/entc/integration/template/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // PetUpdate is the builder for updating Pet entities.
@@ -374,6 +374,13 @@ func (puo *PetUpdateOne) sqlSave(ctx context.Context) (_node *Pet, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Pet.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if ps := puo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := puo.mutation.Age(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeInt,

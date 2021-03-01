@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/o2mrecur/ent/node"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/o2mrecur/ent/node"
 )
 
 // Node is the model entity for the Node schema.
@@ -30,9 +30,9 @@ type Node struct {
 // NodeEdges holds the relations/edges for other nodes in the graph.
 type NodeEdges struct {
 	// Parent holds the value of the parent edge.
-	Parent *Node
+	Parent *Node `json:"parent,omitempty"`
 	// Children holds the value of the children edge.
-	Children []*Node
+	Children []*Node `json:"children,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

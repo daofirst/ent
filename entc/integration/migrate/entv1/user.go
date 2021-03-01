@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/migrate/entv1/car"
-	"github.com/facebook/ent/entc/integration/migrate/entv1/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/migrate/entv1/car"
+	"entgo.io/ent/entc/integration/migrate/entv1/user"
 )
 
 // User is the model entity for the User schema.
@@ -48,13 +48,13 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Parent holds the value of the parent edge.
-	Parent *User
+	Parent *User `json:"parent,omitempty"`
 	// Children holds the value of the children edge.
-	Children []*User
+	Children []*User `json:"children,omitempty"`
 	// Spouse holds the value of the spouse edge.
-	Spouse *User
+	Spouse *User `json:"spouse,omitempty"`
 	// Car holds the value of the car edge.
-	Car *Car
+	Car *Car `json:"car,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [4]bool

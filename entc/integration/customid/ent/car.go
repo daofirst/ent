@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/customid/ent/car"
-	"github.com/facebook/ent/entc/integration/customid/ent/pet"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/customid/ent/car"
+	"entgo.io/ent/entc/integration/customid/ent/pet"
 )
 
 // Car is the model entity for the Car schema.
@@ -35,7 +35,7 @@ type Car struct {
 // CarEdges holds the relations/edges for other nodes in the graph.
 type CarEdges struct {
 	// Owner holds the value of the owner edge.
-	Owner *Pet
+	Owner *Pet `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

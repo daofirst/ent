@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/task"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/task"
+	"entgo.io/ent/schema/field"
 )
 
 // TaskQuery is the builder for querying Task entities.
@@ -265,7 +265,7 @@ func (tq *TaskQuery) GroupBy(field string, fields ...string) *TaskGroupBy {
 		if err := tq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return tq.sqlQuery(), nil
+		return tq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -388,7 +388,7 @@ func (tq *TaskQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (tq *TaskQuery) sqlQuery() *sql.Selector {
+func (tq *TaskQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(tq.driver.Dialect())
 	t1 := builder.Table(task.Table)
 	selector := builder.Select(t1.Columns(task.Columns...)...).From(t1)
@@ -683,7 +683,7 @@ func (ts *TaskSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := ts.prepareQuery(ctx); err != nil {
 		return err
 	}
-	ts.sql = ts.TaskQuery.sqlQuery()
+	ts.sql = ts.TaskQuery.sqlQuery(ctx)
 	return ts.sqlScan(ctx, v)
 }
 

@@ -5,12 +5,13 @@
 package sql
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"testing"
 
-	"github.com/facebook/ent/dialect"
+	"entgo.io/ent/dialect"
 	"github.com/stretchr/testify/require"
 )
 
@@ -319,6 +320,11 @@ func TestBuilder(t *testing.T) {
 		},
 		{
 			input:     Update("users").Set("name", "foo").Where(EQ("name", "bar")),
+			wantQuery: "UPDATE `users` SET `name` = ? WHERE `name` = ?",
+			wantArgs:  []interface{}{"foo", "bar"},
+		},
+		{
+			input:     Update("users").Set("name", "foo").Where(EQ("name", Expr("?", "bar"))),
 			wantQuery: "UPDATE `users` SET `name` = ? WHERE `name` = ?",
 			wantArgs:  []interface{}{"foo", "bar"},
 		},
@@ -1383,4 +1389,28 @@ func TestBuilder_Err(t *testing.T) {
 	require.EqualError(t, b.Err(), "invalid")
 	b.AddError(fmt.Errorf("unexpected"))
 	require.EqualError(t, b.Err(), "invalid; unexpected")
+}
+
+func TestSelector_OrderByExpr(t *testing.T) {
+	query, args := Select("*").
+		From(Table("users")).
+		Where(GT("age", 28)).
+		OrderBy("name").
+		OrderExpr(Expr("CASE WHEN id=? THEN id WHEN id=? THEN name END DESC", 1, 2)).
+		Query()
+	require.Equal(t, "SELECT * FROM `users` WHERE `age` > ? ORDER BY `name`, CASE WHEN id=? THEN id WHEN id=? THEN name END DESC", query)
+	require.Equal(t, []interface{}{28, 1, 2}, args)
+}
+
+func TestBuilderContext(t *testing.T) {
+	type key string
+	want := "myval"
+	ctx := context.WithValue(context.Background(), key("mykey"), want)
+	sel := Dialect(dialect.Postgres).Select().WithContext(ctx)
+	if got := sel.Context().Value(key("mykey")).(string); got != want {
+		t.Fatalf("expected selector context key to be %q but got %q", want, got)
+	}
+	if got := sel.Clone().Context().Value(key("mykey")).(string); got != want {
+		t.Fatalf("expected cloned selector context key to be %q but got %q", want, got)
+	}
 }

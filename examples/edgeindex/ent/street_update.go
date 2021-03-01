@@ -10,12 +10,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/edgeindex/ent/city"
-	"github.com/facebook/ent/examples/edgeindex/ent/predicate"
-	"github.com/facebook/ent/examples/edgeindex/ent/street"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/edgeindex/ent/city"
+	"entgo.io/ent/examples/edgeindex/ent/predicate"
+	"entgo.io/ent/examples/edgeindex/ent/street"
+	"entgo.io/ent/schema/field"
 )
 
 // StreetUpdate is the builder for updating Street entities.
@@ -299,6 +299,13 @@ func (suo *StreetUpdateOne) sqlSave(ctx context.Context) (_node *Street, err err
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing Street.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if ps := suo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := suo.mutation.Name(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,

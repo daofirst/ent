@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/edgeindex/ent/city"
-	"github.com/facebook/ent/examples/edgeindex/ent/predicate"
-	"github.com/facebook/ent/examples/edgeindex/ent/street"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/edgeindex/ent/city"
+	"entgo.io/ent/examples/edgeindex/ent/predicate"
+	"entgo.io/ent/examples/edgeindex/ent/street"
+	"entgo.io/ent/schema/field"
 )
 
 // CityQuery is the builder for querying City entities.
@@ -67,7 +67,7 @@ func (cq *CityQuery) QueryStreets() *StreetQuery {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cq.sqlQuery()
+		selector := cq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (cq *CityQuery) GroupBy(field string, fields ...string) *CityGroupBy {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return cq.sqlQuery(), nil
+		return cq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -460,7 +460,7 @@ func (cq *CityQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cq *CityQuery) sqlQuery() *sql.Selector {
+func (cq *CityQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(cq.driver.Dialect())
 	t1 := builder.Table(city.Table)
 	selector := builder.Select(t1.Columns(city.Columns...)...).From(t1)
@@ -755,7 +755,7 @@ func (cs *CitySelect) Scan(ctx context.Context, v interface{}) error {
 	if err := cs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	cs.sql = cs.CityQuery.sqlQuery()
+	cs.sql = cs.CityQuery.sqlQuery(ctx)
 	return cs.sqlScan(ctx, v)
 }
 

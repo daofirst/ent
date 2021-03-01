@@ -12,12 +12,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/p"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/p"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 	"github.com/google/uuid"
 )
 
@@ -236,6 +236,14 @@ func OptionalUint32(v uint32) predicate.FieldType {
 func OptionalUint64(v uint64) predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
 		t.Has(Label, FieldOptionalUint64, p.EQ(v))
+	})
+}
+
+// Duration applies equality check predicate on the "duration" field. It's identical to DurationEQ.
+func Duration(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.EQ(vc))
 	})
 }
 
@@ -1978,6 +1986,90 @@ func OptionalUint64NotNil() predicate.FieldType {
 	})
 }
 
+// DurationEQ applies the EQ predicate on the "duration" field.
+func DurationEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.EQ(vc))
+	})
+}
+
+// DurationNEQ applies the NEQ predicate on the "duration" field.
+func DurationNEQ(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.NEQ(vc))
+	})
+}
+
+// DurationIn applies the In predicate on the "duration" field.
+func DurationIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.Within(v...))
+	})
+}
+
+// DurationNotIn applies the NotIn predicate on the "duration" field.
+func DurationNotIn(vs ...time.Duration) predicate.FieldType {
+	v := make([]interface{}, len(vs))
+	for i := range v {
+		v[i] = int64(vs[i])
+	}
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.Without(v...))
+	})
+}
+
+// DurationGT applies the GT predicate on the "duration" field.
+func DurationGT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.GT(vc))
+	})
+}
+
+// DurationGTE applies the GTE predicate on the "duration" field.
+func DurationGTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.GTE(vc))
+	})
+}
+
+// DurationLT applies the LT predicate on the "duration" field.
+func DurationLT(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.LT(vc))
+	})
+}
+
+// DurationLTE applies the LTE predicate on the "duration" field.
+func DurationLTE(v time.Duration) predicate.FieldType {
+	vc := int64(v)
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.Has(Label, FieldDuration, p.LTE(vc))
+	})
+}
+
+// DurationIsNil applies the IsNil predicate on the "duration" field.
+func DurationIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldDuration)
+	})
+}
+
+// DurationNotNil applies the NotNil predicate on the "duration" field.
+func DurationNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldDuration)
+	})
+}
+
 // StateEQ applies the EQ predicate on the "state" field.
 func StateEQ(v State) predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
@@ -2877,6 +2969,20 @@ func LinkIsNil() predicate.FieldType {
 func LinkNotNil() predicate.FieldType {
 	return predicate.FieldType(func(t *dsl.Traversal) {
 		t.HasLabel(Label).Has(FieldLink)
+	})
+}
+
+// LinkOtherIsNil applies the IsNil predicate on the "link_other" field.
+func LinkOtherIsNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).HasNot(FieldLinkOther)
+	})
+}
+
+// LinkOtherNotNil applies the NotNil predicate on the "link_other" field.
+func LinkOtherNotNil() predicate.FieldType {
+	return predicate.FieldType(func(t *dsl.Traversal) {
+		t.HasLabel(Label).Has(FieldLinkOther)
 	})
 }
 

@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/traversal/ent/group"
-	"github.com/facebook/ent/examples/traversal/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/traversal/ent/group"
+	"entgo.io/ent/examples/traversal/ent/user"
 )
 
 // Group is the model entity for the Group schema.
@@ -31,9 +31,9 @@ type Group struct {
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
 	// Users holds the value of the users edge.
-	Users []*User
+	Users []*User `json:"users,omitempty"`
 	// Admin holds the value of the admin edge.
-	Admin *User
+	Admin *User `json:"admin,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

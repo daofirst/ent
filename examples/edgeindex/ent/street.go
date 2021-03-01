@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/edgeindex/ent/city"
-	"github.com/facebook/ent/examples/edgeindex/ent/street"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/edgeindex/ent/city"
+	"entgo.io/ent/examples/edgeindex/ent/street"
 )
 
 // Street is the model entity for the Street schema.
@@ -31,7 +31,7 @@ type Street struct {
 // StreetEdges holds the relations/edges for other nodes in the graph.
 type StreetEdges struct {
 	// City holds the value of the city edge.
-	City *City
+	City *City `json:"city,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

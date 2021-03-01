@@ -12,25 +12,25 @@ import (
 	"log"
 	"net/url"
 
-	"github.com/facebook/ent/entc/integration/gremlin/ent/card"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/comment"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/file"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/filetype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/goods"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/group"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/item"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/node"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/pet"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/spec"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/task"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/user"
+	"entgo.io/ent/entc/integration/gremlin/ent/card"
+	"entgo.io/ent/entc/integration/gremlin/ent/comment"
+	"entgo.io/ent/entc/integration/gremlin/ent/fieldtype"
+	"entgo.io/ent/entc/integration/gremlin/ent/file"
+	"entgo.io/ent/entc/integration/gremlin/ent/filetype"
+	"entgo.io/ent/entc/integration/gremlin/ent/goods"
+	"entgo.io/ent/entc/integration/gremlin/ent/group"
+	"entgo.io/ent/entc/integration/gremlin/ent/groupinfo"
+	"entgo.io/ent/entc/integration/gremlin/ent/item"
+	"entgo.io/ent/entc/integration/gremlin/ent/node"
+	"entgo.io/ent/entc/integration/gremlin/ent/pet"
+	"entgo.io/ent/entc/integration/gremlin/ent/spec"
+	"entgo.io/ent/entc/integration/gremlin/ent/task"
+	"entgo.io/ent/entc/integration/gremlin/ent/user"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
 )
 
 // Client is the client that holds all ent builders.
@@ -128,7 +128,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ent: starting a transaction: %v", err)
 	}
-	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = tx
 	return &Tx{
 		ctx:       ctx,
 		config:    cfg,
@@ -160,7 +161,8 @@ func (c *Client) Debug() *Client {
 	if c.debug {
 		return c
 	}
-	cfg := config{driver: dialect.Debug(c.driver, c.log), log: c.log, debug: true, hooks: c.hooks}
+	cfg := c.config
+	cfg.driver = dialect.Debug(c.driver, c.log)
 	client := &Client{config: cfg}
 	client.init()
 	return client

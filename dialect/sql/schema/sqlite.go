@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/schema/field"
 )
 
 // SQLite is an SQLite migration driver.
@@ -120,7 +120,7 @@ func (*SQLite) cType(c *Column) (t string) {
 	case field.TypeUUID:
 		t = "uuid"
 	default:
-		panic("unsupported type " + c.Type.String())
+		panic(fmt.Sprintf("unsupported type %q for column %q", c.Type, c.Name))
 	}
 	return t
 }
@@ -320,4 +320,11 @@ func (d *SQLite) alterColumns(table string, add, _, _ []*Column) sql.Queries {
 	// Modifying and dropping columns is not supported and disabled until we
 	// will support https://www.sqlite.org/lang_altertable.html#otheralter
 	return queries
+}
+
+// tables returns the query for getting the in the schema.
+func (d *SQLite) tables() sql.Querier {
+	return sql.Select("name").
+		From(sql.Table("sqlite_schema")).
+		Where(sql.EQ("type", "table"))
 }

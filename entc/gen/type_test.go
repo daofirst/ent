@@ -7,8 +7,8 @@ package gen
 import (
 	"testing"
 
-	"github.com/facebook/ent/entc/load"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/entc/load"
+	"entgo.io/ent/schema/field"
 
 	"github.com/stretchr/testify/require"
 )
@@ -270,6 +270,23 @@ func TestField_DefaultName(t *testing.T) {
 	for _, tt := range tests {
 		typ := &Field{Name: tt.name}
 		require.Equal(t, tt.constant, typ.DefaultName())
+	}
+}
+
+func TestField_incremental(t *testing.T) {
+	tests := []struct {
+		annotations map[string]interface{}
+		def         bool
+		expected    bool
+	}{
+		{dict("EntSQL", nil), false, false},
+		{dict("EntSQL", nil), true, true},
+		{dict("EntSQL", dict("incremental", true)), false, true},
+		{dict("EntSQL", dict("incremental", false)), true, false},
+	}
+	for _, tt := range tests {
+		typ := &Field{Annotations: tt.annotations}
+		require.Equal(t, tt.expected, typ.incremental(tt.def))
 	}
 }
 

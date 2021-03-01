@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/m2mbidi/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/m2mbidi/ent/user"
 )
 
 // User is the model entity for the User schema.
@@ -31,7 +31,7 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Friends holds the value of the friends edge.
-	Friends []*User
+	Friends []*User `json:"friends,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

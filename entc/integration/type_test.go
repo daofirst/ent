@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/facebook/ent/entc/integration/ent/task"
-
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/ent/task"
 
 	"github.com/stretchr/testify/require"
 )
@@ -63,8 +63,10 @@ func Types(t *testing.T, client *ent.Client) {
 		SetNdir("ndir").
 		SetNullStr(sql.NullString{String: "not-default", Valid: true}).
 		SetLink(schema.Link{URL: link}).
+		SetLinkOther(schema.Link{URL: link}).
 		SetNullLink(schema.Link{URL: link}).
 		SetRole(role.Admin).
+		SetDuration(time.Hour).
 		SaveX(ctx)
 
 	require.Equal(int8(math.MinInt8), ft.OptionalInt8)
@@ -81,6 +83,7 @@ func Types(t *testing.T, client *ent.Client) {
 	require.Equal("default", ft.Str.String)
 	require.Equal("not-default", ft.NullStr.String)
 	require.Equal("localhost", ft.Link.String())
+	require.Equal("localhost", ft.LinkOther.String())
 	require.Equal("localhost", ft.NullLink.String())
 	require.Equal(net.IP("127.0.0.1").String(), ft.IP.String())
 	mac, err := net.ParseMAC("3b:b3:6b:3c:10:79")
@@ -110,6 +113,7 @@ func Types(t *testing.T, client *ent.Client) {
 		SetNullStr(sql.NullString{String: "str", Valid: true}).
 		SetLink(schema.Link{URL: link}).
 		SetNullLink(schema.Link{URL: link}).
+		SetLinkOther(schema.Link{URL: link}).
 		SetSchemaInt(64).
 		SetSchemaInt8(8).
 		SetSchemaInt64(64).
@@ -132,11 +136,19 @@ func Types(t *testing.T, client *ent.Client) {
 	require.Equal("str", ft.Str.String)
 	require.Equal("str", ft.NullStr.String)
 	require.Equal("localhost", ft.Link.String())
+	require.Equal("localhost", ft.LinkOther.String())
 	require.Equal("localhost", ft.NullLink.String())
 	require.Equal(schema.Int(64), ft.SchemaInt)
 	require.Equal(schema.Int8(8), ft.SchemaInt8)
 	require.Equal(schema.Int64(64), ft.SchemaInt64)
 	require.Equal(mac.String(), ft.MAC.String())
+
+	exists, err := client.FieldType.Query().Where(fieldtype.DurationLT(time.Hour * 2)).Exist(ctx)
+	require.NoError(err)
+	require.True(exists)
+	exists, err = client.FieldType.Query().Where(fieldtype.DurationLT(time.Hour)).Exist(ctx)
+	require.NoError(err)
+	require.False(exists)
 
 	_, err = client.Task.CreateBulk(
 		client.Task.Create().SetPriority(schema.PriorityLow),

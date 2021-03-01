@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/traversal/ent/pet"
-	"github.com/facebook/ent/examples/traversal/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/traversal/ent/pet"
+	"entgo.io/ent/examples/traversal/ent/user"
 )
 
 // Pet is the model entity for the Pet schema.
@@ -31,9 +31,9 @@ type Pet struct {
 // PetEdges holds the relations/edges for other nodes in the graph.
 type PetEdges struct {
 	// Friends holds the value of the friends edge.
-	Friends []*Pet
+	Friends []*Pet `json:"friends,omitempty"`
 	// Owner holds the value of the owner edge.
-	Owner *User
+	Owner *User `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

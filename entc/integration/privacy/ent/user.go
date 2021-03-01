@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/privacy/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/privacy/ent/user"
 )
 
 // User is the model entity for the User schema.
@@ -31,9 +31,9 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Teams holds the value of the teams edge.
-	Teams []*Team
+	Teams []*Team `json:"teams,omitempty"`
 	// Tasks holds the value of the tasks edge.
-	Tasks []*Task
+	Tasks []*Task `json:"tasks,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

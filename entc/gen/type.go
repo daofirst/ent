@@ -17,11 +17,11 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/dialect/entsql"
-	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebook/ent/entc/load"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/dialect/sql/schema"
+	"entgo.io/ent/entc/load"
+	"entgo.io/ent/schema/field"
 )
 
 // The following types and their exported methods used by the codegen
@@ -864,6 +864,14 @@ func (f Field) IsEnum() bool { return f.Type != nil && f.Type.Type == field.Type
 
 // Sensitive returns true if the field is a sensitive field.
 func (f Field) Sensitive() bool { return f.def != nil && f.def.Sensitive }
+
+// Comment returns the comment of the field,
+func (f Field) Comment() string {
+	if f.def != nil {
+		return f.def.Comment
+	}
+	return ""
+}
 
 // NullType returns the sql null-type for optional and nullable fields.
 func (f Field) NullType() string {

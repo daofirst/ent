@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/item"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/item"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // ItemQuery is the builder for querying Item entities.
@@ -252,7 +252,7 @@ func (iq *ItemQuery) GroupBy(field string, fields ...string) *ItemGroupBy {
 		if err := iq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return iq.sqlQuery(), nil
+		return iq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -364,7 +364,7 @@ func (iq *ItemQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (iq *ItemQuery) sqlQuery() *sql.Selector {
+func (iq *ItemQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(iq.driver.Dialect())
 	t1 := builder.Table(item.Table)
 	selector := builder.Select(t1.Columns(item.Columns...)...).From(t1)
@@ -659,7 +659,7 @@ func (is *ItemSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := is.prepareQuery(ctx); err != nil {
 		return err
 	}
-	is.sql = is.ItemQuery.sqlQuery()
+	is.sql = is.ItemQuery.sqlQuery(ctx)
 	return is.sqlScan(ctx, v)
 }
 

@@ -15,16 +15,16 @@ and maintain applications with large data-models and sticks with the following p
 
 <br/>
 
-![gopher-schema-as-code](https://entgo.io/assets/gopher-schema-as-code.png)
+![gopher-schema-as-code](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/gopher-schema-as-code.png)
 
 ## Installation
 
 ```console
-go get github.com/facebook/ent/cmd/ent
+go get entgo.io/ent/cmd/ent
 ```
 
 After installing `ent` codegen tool, you should have it in your `PATH`.
-If you don't find it your path, you can also run: `go run github.com/facebook/ent/cmd/ent <command>`
+If you don't find it your path, you can also run: `go run entgo.io/ent/cmd/ent <command>`
 
 ## Setup A Go Environment
 
@@ -49,7 +49,7 @@ The command above will generate the schema for `User` under `<project>/ent/schem
 
 package schema
 
-import "github.com/facebook/ent"
+import "entgo.io/ent"
 
 // User holds the schema definition for the User entity.
 type User struct {
@@ -74,8 +74,8 @@ Add 2 fields to the `User` schema:
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
 )
 
 
@@ -205,7 +205,7 @@ Let's create 2 additional entities named `Car` and `Group` with a few fields. We
 to generate the initial schemas:
 
 ```console
-go run github.com/facebook/ent/cmd/ent init Car Group
+go run entgo.io/ent/cmd/ent init Car Group
 ```
 
 And then we add the rest of the fields manually:
@@ -213,8 +213,8 @@ And then we add the rest of the fields manually:
 import (
 	"regexp"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/field"
 )
 
 // Fields of the Car.
@@ -239,7 +239,7 @@ func (Group) Fields() []ent.Field {
 Let's define our first relation. An edge from `User` to `Car` defining that a user
 can **have 1 or more** cars, but a car **has only one** owner (one-to-many relation).
 
-![er-user-cars](https://entgo.io/assets/re_user_cars.png)
+![er-user-cars](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_user_cars.png)
 
 Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
 
@@ -247,8 +247,8 @@ Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
  import (
  	"log"
 
- 	"github.com/facebook/ent"
- 	"github.com/facebook/ent/schema/edge"
+ 	"entgo.io/ent"
+ 	"entgo.io/ent/schema/edge"
  )
 
  // Edges of the User.
@@ -330,7 +330,7 @@ Assume we have a `Car` object and we want to get its owner; the user that this c
 For this, we have another type of edge called "inverse edge" that is defined using the `edge.From`
 function.
 
-![er-cars-owner](https://entgo.io/assets/re_cars_owner.png)
+![er-cars-owner](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_cars_owner.png)
 
 The new edge created in the diagram above is translucent, to emphasize that we don't create another
 edge in the database. It's just a back-reference to the real edge (relation).
@@ -342,8 +342,8 @@ in the `User` schema, and run `go generate ./ent`.
 import (
 	"log"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema/edge"
+	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 )
 
 // Edges of the Car.
@@ -390,7 +390,7 @@ func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 
 We'll continue our example by creating a M2M (many-to-many) relationship between users and groups.
 
-![er-group-users](https://entgo.io/assets/re_group_users.png)
+![er-group-users](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_group_users.png)
 
 As you can see, each group entity can **have many** users, and a user can **be connected to many** groups;
 a simple "many-to-many" relationship. In the above illustration, the `Group` schema is the owner
@@ -403,8 +403,8 @@ relationship named `groups`. Let's define this relationship in our schemas:
 	 import (
 		"log"
 	
-		"github.com/facebook/ent"
-		"github.com/facebook/ent/schema/edge"
+		"entgo.io/ent"
+		"entgo.io/ent/schema/edge"
 	 )
 	
 	 // Edges of the Group.
@@ -420,8 +420,8 @@ relationship named `groups`. Let's define this relationship in our schemas:
 	 import (
 	 	"log"
 	
-	 	"github.com/facebook/ent"
-	 	"github.com/facebook/ent/schema/edge"
+	 	"entgo.io/ent"
+	 	"entgo.io/ent/schema/edge"
 	 )
 	
 	 // Edges of the User.
@@ -447,7 +447,7 @@ go generate ./ent
 In order to run our first graph traversal, we need to generate some data (nodes and edges, or in other words, 
 entities and relations). Let's create the following graph using the framework:
 
-![re-graph](https://entgo.io/assets/re_graph_getting_started.png)
+![re-graph](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_graph_getting_started.png)
 
 
 ```go
@@ -610,4 +610,4 @@ Now when we have a graph with data, we can run a few queries on it:
     }
     ```
 
-The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/start).
+The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/start).

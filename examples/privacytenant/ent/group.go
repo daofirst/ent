@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/privacytenant/ent/group"
-	"github.com/facebook/ent/examples/privacytenant/ent/tenant"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/privacytenant/ent/group"
+	"entgo.io/ent/examples/privacytenant/ent/tenant"
 )
 
 // Group is the model entity for the Group schema.
@@ -31,9 +31,9 @@ type Group struct {
 // GroupEdges holds the relations/edges for other nodes in the graph.
 type GroupEdges struct {
 	// Tenant holds the value of the tenant edge.
-	Tenant *Tenant
+	Tenant *Tenant `json:"tenant,omitempty"`
 	// Users holds the value of the users edge.
-	Users []*User
+	Users []*User `json:"users,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool

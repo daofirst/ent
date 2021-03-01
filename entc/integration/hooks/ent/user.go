@@ -10,8 +10,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/hooks/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/hooks/ent/user"
 )
 
 // User is the model entity for the User schema.
@@ -34,11 +34,11 @@ type User struct {
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
 	// Cards holds the value of the cards edge.
-	Cards []*Card
+	Cards []*Card `json:"cards,omitempty"`
 	// Friends holds the value of the friends edge.
-	Friends []*User
+	Friends []*User `json:"friends,omitempty"`
 	// BestFriend holds the value of the best_friend edge.
-	BestFriend *User
+	BestFriend *User `json:"best_friend,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [3]bool

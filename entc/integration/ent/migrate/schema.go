@@ -7,8 +7,8 @@
 package migrate
 
 import (
-	"github.com/facebook/ent/dialect/sql/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql/schema"
+	"entgo.io/ent/schema/field"
 )
 
 var (
@@ -91,6 +91,7 @@ var (
 		{Name: "optional_uint16", Type: field.TypeUint16, Nullable: true},
 		{Name: "optional_uint32", Type: field.TypeUint32, Nullable: true},
 		{Name: "optional_uint64", Type: field.TypeUint64, Nullable: true},
+		{Name: "duration", Type: field.TypeInt64, Nullable: true},
 		{Name: "state", Type: field.TypeEnum, Nullable: true, Enums: []string{"on", "off"}},
 		{Name: "optional_float", Type: field.TypeFloat64, Nullable: true},
 		{Name: "optional_float32", Type: field.TypeFloat32, Nullable: true},
@@ -101,6 +102,7 @@ var (
 		{Name: "str", Type: field.TypeString, Nullable: true},
 		{Name: "null_str", Type: field.TypeString, Nullable: true},
 		{Name: "link", Type: field.TypeString, Nullable: true},
+		{Name: "link_other", Type: field.TypeOther, Nullable: true, SchemaType: map[string]string{"mysql": "varchar(255)", "postgres": "varchar", "sqlite3": "varchar(255)"}},
 		{Name: "null_link", Type: field.TypeString, Nullable: true},
 		{Name: "active", Type: field.TypeBool, Nullable: true},
 		{Name: "null_active", Type: field.TypeBool, Nullable: true},
@@ -127,7 +129,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:  "field_types_files_field",
-				Columns: []*schema.Column{FieldTypesColumns[48]},
+				Columns: []*schema.Column{FieldTypesColumns[50]},
 
 				RefColumns: []*schema.Column{FilesColumns[0]},
 				OnDelete:   schema.SetNull,

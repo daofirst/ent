@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/examples/traversal/ent/group"
-	"github.com/facebook/ent/examples/traversal/ent/predicate"
-	"github.com/facebook/ent/examples/traversal/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/examples/traversal/ent/group"
+	"entgo.io/ent/examples/traversal/ent/predicate"
+	"entgo.io/ent/examples/traversal/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // GroupQuery is the builder for querying Group entities.
@@ -69,7 +69,7 @@ func (gq *GroupQuery) QueryUsers() *UserQuery {
 		if err := gq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := gq.sqlQuery()
+		selector := gq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -91,7 +91,7 @@ func (gq *GroupQuery) QueryAdmin() *UserQuery {
 		if err := gq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := gq.sqlQuery()
+		selector := gq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -339,7 +339,7 @@ func (gq *GroupQuery) GroupBy(field string, fields ...string) *GroupGroupBy {
 		if err := gq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return gq.sqlQuery(), nil
+		return gq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -564,7 +564,7 @@ func (gq *GroupQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (gq *GroupQuery) sqlQuery() *sql.Selector {
+func (gq *GroupQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(gq.driver.Dialect())
 	t1 := builder.Table(group.Table)
 	selector := builder.Select(t1.Columns(group.Columns...)...).From(t1)
@@ -859,7 +859,7 @@ func (gs *GroupSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := gs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gs.sql = gs.GroupQuery.sqlQuery()
+	gs.sql = gs.GroupQuery.sqlQuery(ctx)
 	return gs.sqlScan(ctx, v)
 }
 

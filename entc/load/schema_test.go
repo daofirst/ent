@@ -12,12 +12,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	"github.com/facebook/ent/schema/index"
-	"github.com/facebook/ent/schema/mixin"
+	"entgo.io/ent"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
+	"entgo.io/ent/schema/mixin"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
@@ -73,7 +73,8 @@ func (User) Annotations() []schema.Annotation {
 
 func (User) Fields() []ent.Field {
 	return []ent.Field{
-		field.Int("age"),
+		field.Int("age").
+			Comment("some comment"),
 		field.String("name").
 			Default("unknown").
 			Annotations(&OrderConfig{FieldName: "name"}),
@@ -210,6 +211,9 @@ func TestMarshalSchema(t *testing.T) {
 		require.Equal(t, []string{"parent"}, schema.Indexes[1].Edges)
 		require.Equal(t, "user_parent_name", schema.Indexes[1].StorageKey)
 		require.True(t, schema.Indexes[1].Unique)
+
+		require.Equal(t, "some comment", schema.Fields[0].Comment)
+		require.Empty(t, schema.Fields[1].Comment)
 	}
 }
 
@@ -263,6 +267,10 @@ func (WithDefaults) Fields() []ent.Field {
 			Default(true),
 		field.Time("updated_at").
 			UpdateDefault(time.Now),
+		// see issue #1146
+		field.Int("int_default_func").DefaultFunc(func() int {
+			return 1e9
+		}),
 	}
 }
 
@@ -290,6 +298,8 @@ func TestMarshalDefaults(t *testing.T) {
 	require.True(t, schema.Fields[3].Default)
 	require.False(t, schema.Fields[4].Default)
 	require.True(t, schema.Fields[4].UpdateDefault)
+	require.True(t, schema.Fields[5].Default)
+	require.Equal(t, schema.Fields[5].DefaultKind, reflect.Func)
 }
 
 type TimeMixin struct {

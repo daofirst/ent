@@ -14,14 +14,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/__"
-	"github.com/facebook/ent/dialect/gremlin/graph/dsl/g"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/predicate"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/dialect/gremlin/graph/dsl"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/__"
+	"entgo.io/ent/dialect/gremlin/graph/dsl/g"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/fieldtype"
+	"entgo.io/ent/entc/integration/gremlin/ent/predicate"
 	"github.com/google/uuid"
 )
 
@@ -535,6 +535,33 @@ func (ftu *FieldTypeUpdate) ClearOptionalUint64() *FieldTypeUpdate {
 	return ftu
 }
 
+// SetDuration sets the "duration" field.
+func (ftu *FieldTypeUpdate) SetDuration(t time.Duration) *FieldTypeUpdate {
+	ftu.mutation.ResetDuration()
+	ftu.mutation.SetDuration(t)
+	return ftu
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftu *FieldTypeUpdate) SetNillableDuration(t *time.Duration) *FieldTypeUpdate {
+	if t != nil {
+		ftu.SetDuration(*t)
+	}
+	return ftu
+}
+
+// AddDuration adds t to the "duration" field.
+func (ftu *FieldTypeUpdate) AddDuration(t time.Duration) *FieldTypeUpdate {
+	ftu.mutation.AddDuration(t)
+	return ftu
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (ftu *FieldTypeUpdate) ClearDuration() *FieldTypeUpdate {
+	ftu.mutation.ClearDuration()
+	return ftu
+}
+
 // SetState sets the "state" field.
 func (ftu *FieldTypeUpdate) SetState(f fieldtype.State) *FieldTypeUpdate {
 	ftu.mutation.SetState(f)
@@ -729,6 +756,18 @@ func (ftu *FieldTypeUpdate) SetLink(s schema.Link) *FieldTypeUpdate {
 // ClearLink clears the value of the "link" field.
 func (ftu *FieldTypeUpdate) ClearLink() *FieldTypeUpdate {
 	ftu.mutation.ClearLink()
+	return ftu
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftu *FieldTypeUpdate) SetLinkOther(s schema.Link) *FieldTypeUpdate {
+	ftu.mutation.SetLinkOther(s)
+	return ftu
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (ftu *FieldTypeUpdate) ClearLinkOther() *FieldTypeUpdate {
+	ftu.mutation.ClearLinkOther()
 	return ftu
 }
 
@@ -1262,6 +1301,12 @@ func (ftu *FieldTypeUpdate) gremlin() *dsl.Traversal {
 	if value, ok := ftu.mutation.AddedOptionalUint64(); ok {
 		v.Property(dsl.Single, fieldtype.FieldOptionalUint64, __.Union(__.Values(fieldtype.FieldOptionalUint64), __.Constant(value)).Sum())
 	}
+	if value, ok := ftu.mutation.Duration(); ok {
+		v.Property(dsl.Single, fieldtype.FieldDuration, value)
+	}
+	if value, ok := ftu.mutation.AddedDuration(); ok {
+		v.Property(dsl.Single, fieldtype.FieldDuration, __.Union(__.Values(fieldtype.FieldDuration), __.Constant(value)).Sum())
+	}
 	if value, ok := ftu.mutation.State(); ok {
 		v.Property(dsl.Single, fieldtype.FieldState, value)
 	}
@@ -1300,6 +1345,9 @@ func (ftu *FieldTypeUpdate) gremlin() *dsl.Traversal {
 	}
 	if value, ok := ftu.mutation.Link(); ok {
 		v.Property(dsl.Single, fieldtype.FieldLink, value)
+	}
+	if value, ok := ftu.mutation.LinkOther(); ok {
+		v.Property(dsl.Single, fieldtype.FieldLinkOther, value)
 	}
 	if value, ok := ftu.mutation.NullLink(); ok {
 		v.Property(dsl.Single, fieldtype.FieldNullLink, value)
@@ -1413,6 +1461,9 @@ func (ftu *FieldTypeUpdate) gremlin() *dsl.Traversal {
 	if ftu.mutation.OptionalUint64Cleared() {
 		properties = append(properties, fieldtype.FieldOptionalUint64)
 	}
+	if ftu.mutation.DurationCleared() {
+		properties = append(properties, fieldtype.FieldDuration)
+	}
 	if ftu.mutation.StateCleared() {
 		properties = append(properties, fieldtype.FieldState)
 	}
@@ -1442,6 +1493,9 @@ func (ftu *FieldTypeUpdate) gremlin() *dsl.Traversal {
 	}
 	if ftu.mutation.LinkCleared() {
 		properties = append(properties, fieldtype.FieldLink)
+	}
+	if ftu.mutation.LinkOtherCleared() {
+		properties = append(properties, fieldtype.FieldLinkOther)
 	}
 	if ftu.mutation.NullLinkCleared() {
 		properties = append(properties, fieldtype.FieldNullLink)
@@ -2000,6 +2054,33 @@ func (ftuo *FieldTypeUpdateOne) ClearOptionalUint64() *FieldTypeUpdateOne {
 	return ftuo
 }
 
+// SetDuration sets the "duration" field.
+func (ftuo *FieldTypeUpdateOne) SetDuration(t time.Duration) *FieldTypeUpdateOne {
+	ftuo.mutation.ResetDuration()
+	ftuo.mutation.SetDuration(t)
+	return ftuo
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftuo *FieldTypeUpdateOne) SetNillableDuration(t *time.Duration) *FieldTypeUpdateOne {
+	if t != nil {
+		ftuo.SetDuration(*t)
+	}
+	return ftuo
+}
+
+// AddDuration adds t to the "duration" field.
+func (ftuo *FieldTypeUpdateOne) AddDuration(t time.Duration) *FieldTypeUpdateOne {
+	ftuo.mutation.AddDuration(t)
+	return ftuo
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (ftuo *FieldTypeUpdateOne) ClearDuration() *FieldTypeUpdateOne {
+	ftuo.mutation.ClearDuration()
+	return ftuo
+}
+
 // SetState sets the "state" field.
 func (ftuo *FieldTypeUpdateOne) SetState(f fieldtype.State) *FieldTypeUpdateOne {
 	ftuo.mutation.SetState(f)
@@ -2194,6 +2275,18 @@ func (ftuo *FieldTypeUpdateOne) SetLink(s schema.Link) *FieldTypeUpdateOne {
 // ClearLink clears the value of the "link" field.
 func (ftuo *FieldTypeUpdateOne) ClearLink() *FieldTypeUpdateOne {
 	ftuo.mutation.ClearLink()
+	return ftuo
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftuo *FieldTypeUpdateOne) SetLinkOther(s schema.Link) *FieldTypeUpdateOne {
+	ftuo.mutation.SetLinkOther(s)
+	return ftuo
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (ftuo *FieldTypeUpdateOne) ClearLinkOther() *FieldTypeUpdateOne {
+	ftuo.mutation.ClearLinkOther()
 	return ftuo
 }
 
@@ -2732,6 +2825,12 @@ func (ftuo *FieldTypeUpdateOne) gremlin(id string) *dsl.Traversal {
 	if value, ok := ftuo.mutation.AddedOptionalUint64(); ok {
 		v.Property(dsl.Single, fieldtype.FieldOptionalUint64, __.Union(__.Values(fieldtype.FieldOptionalUint64), __.Constant(value)).Sum())
 	}
+	if value, ok := ftuo.mutation.Duration(); ok {
+		v.Property(dsl.Single, fieldtype.FieldDuration, value)
+	}
+	if value, ok := ftuo.mutation.AddedDuration(); ok {
+		v.Property(dsl.Single, fieldtype.FieldDuration, __.Union(__.Values(fieldtype.FieldDuration), __.Constant(value)).Sum())
+	}
 	if value, ok := ftuo.mutation.State(); ok {
 		v.Property(dsl.Single, fieldtype.FieldState, value)
 	}
@@ -2770,6 +2869,9 @@ func (ftuo *FieldTypeUpdateOne) gremlin(id string) *dsl.Traversal {
 	}
 	if value, ok := ftuo.mutation.Link(); ok {
 		v.Property(dsl.Single, fieldtype.FieldLink, value)
+	}
+	if value, ok := ftuo.mutation.LinkOther(); ok {
+		v.Property(dsl.Single, fieldtype.FieldLinkOther, value)
 	}
 	if value, ok := ftuo.mutation.NullLink(); ok {
 		v.Property(dsl.Single, fieldtype.FieldNullLink, value)
@@ -2883,6 +2985,9 @@ func (ftuo *FieldTypeUpdateOne) gremlin(id string) *dsl.Traversal {
 	if ftuo.mutation.OptionalUint64Cleared() {
 		properties = append(properties, fieldtype.FieldOptionalUint64)
 	}
+	if ftuo.mutation.DurationCleared() {
+		properties = append(properties, fieldtype.FieldDuration)
+	}
 	if ftuo.mutation.StateCleared() {
 		properties = append(properties, fieldtype.FieldState)
 	}
@@ -2912,6 +3017,9 @@ func (ftuo *FieldTypeUpdateOne) gremlin(id string) *dsl.Traversal {
 	}
 	if ftuo.mutation.LinkCleared() {
 		properties = append(properties, fieldtype.FieldLink)
+	}
+	if ftuo.mutation.LinkOtherCleared() {
+		properties = append(properties, fieldtype.FieldLinkOther)
 	}
 	if ftuo.mutation.NullLinkCleared() {
 		properties = append(properties, fieldtype.FieldNullLink)

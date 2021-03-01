@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/schema"
-	"github.com/facebook/ent/schema/edge"
-	"github.com/facebook/ent/schema/field"
-	"github.com/facebook/ent/schema/index"
+	"entgo.io/ent"
+	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
+	"entgo.io/ent/schema/field"
+	"entgo.io/ent/schema/index"
 )
 
 // Schema represents an ent.Schema that was loaded from a complied user package.
@@ -56,6 +56,7 @@ type Field struct {
 	Sensitive     bool                    `json:"sensitive,omitempty"`
 	SchemaType    map[string]string       `json:"schema_type,omitempty"`
 	Annotations   map[string]interface{}  `json:"annotations,omitempty"`
+	Comment       string                  `json:"comment,omitempty"`
 }
 
 // Edge represents an ent.Edge that was loaded from a complied user package.
@@ -103,7 +104,7 @@ func NewEdge(ed *edge.Descriptor) *Edge {
 	return ne
 }
 
-// NewField creates an loaded field from field descriptor.
+// NewField creates a loaded field from field descriptor.
 func NewField(fd *field.Descriptor) (*Field, error) {
 	if fd.Err != nil {
 		return nil, fmt.Errorf("field %q: %v", fd.Name, fd.Err)
@@ -124,6 +125,7 @@ func NewField(fd *field.Descriptor) (*Field, error) {
 		Sensitive:     fd.Sensitive,
 		SchemaType:    fd.SchemaType,
 		Annotations:   make(map[string]interface{}),
+		Comment:       fd.Comment,
 	}
 	for _, at := range fd.Annotations {
 		sf.addAnnotation(at)
@@ -352,7 +354,7 @@ func (f *Field) addAnnotation(an schema.Annotation) {
 }
 
 func (f *Field) defaults() error {
-	if !f.Default || !f.Info.Numeric() {
+	if !f.Default || !f.Info.Numeric() || f.DefaultKind == reflect.Func {
 		return nil
 	}
 	n, ok := f.DefaultValue.(float64)

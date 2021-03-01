@@ -5,7 +5,7 @@ title: Privacy
 
 The `Policy` option in the schema allows configuring privacy policy for queries and mutations of entities in the database.
 
-![gopher-privacy](https://entgo.io/assets/gopher-privacy-opacity.png)
+![gopher-privacy](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/gopher-privacy-opacity.png)
 
 The main advantage of the privacy layer is that, you write the privacy policy **once** (in the schema), and it is **always**
 evaluated. No matter where queries and mutations are performed in your codebase, it will always go through the privacy layer.
@@ -24,12 +24,12 @@ in the same order they are declared in the schema.
 If all rules are evaluated without returning an error, the evaluation finishes successfully, and the executed operation 
 gets access to the target nodes.
 
-![privacy-rules](https://entgo.io/assets/permission_1.png)
+![privacy-rules](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_1.png)
 
 However, if one of the evaluated rules returns an error or a `privacy.Deny` decision (see below), the executed operation
 returns an error, and it is cancelled. 
 
-![privacy-deny](https://entgo.io/assets/permission_2.png)
+![privacy-deny](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_2.png)
 
 ### Privacy Rules
 
@@ -55,7 +55,7 @@ There are three types of decision that can help you control the privacy rules ev
   
 - `privacy.Skip` - Skip the current rule, and jump to the next privacy rule. This equivalent to returning a `nil` error.
 
-![privacy-allow](https://entgo.io/assets/permission_3.png)
+![privacy-allow](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_3.png)
 
 Now, that we’ve covered the basic terms, let’s start writing some code.
 
@@ -68,7 +68,7 @@ In order to enable the privacy option in your code generation, enable the `priva
 ```go
 package ent
   
-//go:generate go run github.com/facebook/ent/cmd/ent generate --feature privacy ./schema
+//go:generate go run entgo.io/ent/cmd/ent generate --feature privacy ./schema
 ```
 
 It is recommended to add the [`schema/snapshot`](features.md#auto-solve-merge-conflicts) feature-flag along with the
@@ -89,9 +89,9 @@ package main
 import (
     "log"
 
-    "github.com/facebook/ent/entc"
-    "github.com/facebook/ent/entc/gen"
-    "github.com/facebookincubator/ent-contrib/entgql"
+    "entgo.io/ent/entc"
+    "entgo.io/ent/entc/gen"
+    "entgo.ioincubator/ent-contrib/entgql"
 )
 
 func main() {
@@ -132,8 +132,8 @@ After running the code-generation (with the feature-flag for privacy), we add th
 package schema
 
 import (
-	"github.com/facebook/ent"
-	"github.com/facebook/ent/examples/privacyadmin/ent/privacy"
+	"entgo.io/ent"
+	"entgo.io/ent/examples/privacyadmin/ent/privacy"
 )
 
 // User holds the schema definition for the User entity.
@@ -165,8 +165,8 @@ package rule
 import (
 	"context"
 
-	"github.com/facebook/ent/examples/privacyadmin/ent/privacy"
-	"github.com/facebook/ent/examples/privacyadmin/viewer"
+	"entgo.io/ent/examples/privacyadmin/ent/privacy"
+	"entgo.io/ent/examples/privacyadmin/viewer"
 )
 
 // DenyIfNoViewer is a rule that returns Deny decision if the viewer is
@@ -264,16 +264,16 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/privacyadmin).
+The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/privacyadmin).
 
 ### Multi Tenancy
 
 In this example, we're going to create a schema with 3 entity types - `Tenant`, `User` and `Group`.
 The helper packages `viewer` and `rule` (as mentioned above) also exist in this example to help us structure the application.
 
-![tenant-example](https://entgo.io/assets/tenant_medium.png)
+![tenant-example](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/tenant_medium.png)
 
-Let's start building this application piece by piece. We begin by creating 3 different schemas (see the full code [here](https://github.com/facebook/ent/tree/master/examples/privacytenant/ent/schema)),
+Let's start building this application piece by piece. We begin by creating 3 different schemas (see the full code [here](https://entgo.io/ent/tree/master/examples/privacytenant/ent/schema)),
 and since we want to share some logic between them, we create another [mixed-in schema](schema-mixin.md) and add it to all other schemas as follows:
 
 ```go
@@ -379,7 +379,7 @@ are not connected to the same tenant.
 
 ```go
 // FilterTenantRule is a query rule that filters out entities that are not in the tenant.
-func FilterTenantRule() privacy.QueryRule {
+func FilterTenantRule() privacy.QueryMutationRule {
 	type TeamsFilter interface {
 		WhereHasTenantWith(...predicate.Tenant)
 	}
@@ -520,6 +520,48 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/privacytenant).
+In some cases, we want to reject user operations on entities that don't belong to their tenant **without loading
+these entities from the database** (unlike the `DenyMismatchedTenants` example above). To achieve this, we can use the
+`FilterTenantRule` rule for mutations as well, but limit it to specific operations as follows:
+
+```go
+// Policy defines the privacy policy of the Group.
+func (Group) Policy() ent.Policy {
+	return privacy.Policy{
+		Mutation: privacy.MutationPolicy{
+			rule.DenyMismatchedTenants(),
+            // Limit the FilterTenantRule only for
+            // UpdateOne and DeleteOne operations.
+			privacy.OnMutationOperation(
+				rule.FilterTenantRule(),
+				ent.OpUpdateOne|ent.OpDeleteOne,
+			),
+		},
+	}
+}
+```
+
+Then, we expect the privacy-rules to take effect on the client operations.
+
+```go
+func Do(ctx context.Context, client *ent.Client) error {
+    // A continuation of the code-block above.
+
+    // Expect operation to fail, because the FilterTenantRule rule makes sure
+    // that tenants can update and delete only their groups.
+    err = entgo.Update().SetName("fail.go").Exec(labView)
+    if !ent.IsNotFound(err) {
+    	return fmt.Errorf("expect operation to fail, since the group (entgo) is managed by a different tenant (hub)")
+    }
+    entgo, err = entgo.Update().SetName("entgo").Save(hubView)
+    if err != nil {
+    	return fmt.Errorf("expect operation to pass, but got %v", err)
+    }
+    fmt.Println(entgo)
+    return nil
+}
+```
+
+The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/privacytenant).
 
 Please note that this documentation is under active development.

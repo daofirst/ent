@@ -7,16 +7,19 @@ package template
 import (
 	"context"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/facebook/ent/dialect/entsql"
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/config/ent"
-	"github.com/facebook/ent/entc/integration/config/ent/migrate"
-	"github.com/facebook/ent/entc/integration/config/ent/schema"
+	"entgo.io/ent/dialect/entsql"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/config/ent"
+	"entgo.io/ent/entc/integration/config/ent/migrate"
+	"entgo.io/ent/entc/integration/config/ent/schema"
 
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/mattn/go-sqlite3"
@@ -50,6 +53,17 @@ func TestSchemaConfig(t *testing.T) {
 	require.Equal(t, *idIncremental, migrate.Tables[0].Columns[0].Increment)
 	size := schema.User{}.Fields()[1].Descriptor().Annotations[0].(entsql.Annotation).Size
 	require.Equal(t, size, migrate.Tables[0].Columns[1].Size)
+
+	fd := schema.User{}.Fields()[1].Descriptor()
+	f, err := parser.ParseFile(token.NewFileSet(), "ent/user.go", nil, parser.ParseComments)
+	require.NoError(t, err)
+	ast.Inspect(f, func(n ast.Node) bool {
+		if f, ok := n.(*ast.Field); ok && len(f.Names) > 0 && f.Names[0].Name == fd.Name {
+			require.Equal(t, fd.Comment, f.Doc.Text())
+			return false
+		}
+		return true
+	})
 }
 
 func TestMySQL(t *testing.T) {

@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/facebook/ent/dialect/gremlin"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/gremlin/ent/fieldtype"
+	"entgo.io/ent/dialect/gremlin"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/gremlin/ent/fieldtype"
 	"github.com/google/uuid"
 )
 
@@ -68,6 +68,8 @@ type FieldType struct {
 	OptionalUint32 uint32 `json:"optional_uint32,omitempty"`
 	// OptionalUint64 holds the value of the "optional_uint64" field.
 	OptionalUint64 uint64 `json:"optional_uint64,omitempty"`
+	// Duration holds the value of the "duration" field.
+	Duration time.Duration `json:"duration,omitempty"`
 	// State holds the value of the "state" field.
 	State fieldtype.State `json:"state,omitempty"`
 	// OptionalFloat holds the value of the "optional_float" field.
@@ -88,6 +90,8 @@ type FieldType struct {
 	NullStr *sql.NullString `json:"null_str,omitempty"`
 	// Link holds the value of the "link" field.
 	Link schema.Link `json:"link,omitempty"`
+	// LinkOther holds the value of the "link_other" field.
+	LinkOther schema.Link `json:"link_other,omitempty"`
 	// NullLink holds the value of the "null_link" field.
 	NullLink *schema.Link `json:"null_link,omitempty"`
 	// Active holds the value of the "active" field.
@@ -151,6 +155,7 @@ func (ft *FieldType) FromResponse(res *gremlin.Response) error {
 		OptionalUint16        uint16          `json:"optional_uint16,omitempty"`
 		OptionalUint32        uint32          `json:"optional_uint32,omitempty"`
 		OptionalUint64        uint64          `json:"optional_uint64,omitempty"`
+		Duration              time.Duration   `json:"duration,omitempty"`
 		State                 fieldtype.State `json:"state,omitempty"`
 		OptionalFloat         float64         `json:"optional_float,omitempty"`
 		OptionalFloat32       float32         `json:"optional_float32,omitempty"`
@@ -161,6 +166,7 @@ func (ft *FieldType) FromResponse(res *gremlin.Response) error {
 		Str                   sql.NullString  `json:"str,omitempty"`
 		NullStr               *sql.NullString `json:"null_str,omitempty"`
 		Link                  schema.Link     `json:"link,omitempty"`
+		LinkOther             schema.Link     `json:"link_other,omitempty"`
 		NullLink              *schema.Link    `json:"null_link,omitempty"`
 		Active                schema.Status   `json:"active,omitempty"`
 		NullActive            *schema.Status  `json:"null_active,omitempty"`
@@ -203,6 +209,7 @@ func (ft *FieldType) FromResponse(res *gremlin.Response) error {
 	ft.OptionalUint16 = scanft.OptionalUint16
 	ft.OptionalUint32 = scanft.OptionalUint32
 	ft.OptionalUint64 = scanft.OptionalUint64
+	ft.Duration = scanft.Duration
 	ft.State = scanft.State
 	ft.OptionalFloat = scanft.OptionalFloat
 	ft.OptionalFloat32 = scanft.OptionalFloat32
@@ -213,6 +220,7 @@ func (ft *FieldType) FromResponse(res *gremlin.Response) error {
 	ft.Str = scanft.Str
 	ft.NullStr = scanft.NullStr
 	ft.Link = scanft.Link
+	ft.LinkOther = scanft.LinkOther
 	ft.NullLink = scanft.NullLink
 	ft.Active = scanft.Active
 	ft.NullActive = scanft.NullActive
@@ -307,6 +315,8 @@ func (ft *FieldType) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ft.OptionalUint32))
 	builder.WriteString(", optional_uint64=")
 	builder.WriteString(fmt.Sprintf("%v", ft.OptionalUint64))
+	builder.WriteString(", duration=")
+	builder.WriteString(fmt.Sprintf("%v", ft.Duration))
 	builder.WriteString(", state=")
 	builder.WriteString(fmt.Sprintf("%v", ft.State))
 	builder.WriteString(", optional_float=")
@@ -331,6 +341,8 @@ func (ft *FieldType) String() string {
 	}
 	builder.WriteString(", link=")
 	builder.WriteString(fmt.Sprintf("%v", ft.Link))
+	builder.WriteString(", link_other=")
+	builder.WriteString(fmt.Sprintf("%v", ft.LinkOther))
 	if v := ft.NullLink; v != nil {
 		builder.WriteString(", null_link=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
@@ -403,6 +415,7 @@ func (ft *FieldTypes) FromResponse(res *gremlin.Response) error {
 		OptionalUint16        uint16          `json:"optional_uint16,omitempty"`
 		OptionalUint32        uint32          `json:"optional_uint32,omitempty"`
 		OptionalUint64        uint64          `json:"optional_uint64,omitempty"`
+		Duration              time.Duration   `json:"duration,omitempty"`
 		State                 fieldtype.State `json:"state,omitempty"`
 		OptionalFloat         float64         `json:"optional_float,omitempty"`
 		OptionalFloat32       float32         `json:"optional_float32,omitempty"`
@@ -413,6 +426,7 @@ func (ft *FieldTypes) FromResponse(res *gremlin.Response) error {
 		Str                   sql.NullString  `json:"str,omitempty"`
 		NullStr               *sql.NullString `json:"null_str,omitempty"`
 		Link                  schema.Link     `json:"link,omitempty"`
+		LinkOther             schema.Link     `json:"link_other,omitempty"`
 		NullLink              *schema.Link    `json:"null_link,omitempty"`
 		Active                schema.Status   `json:"active,omitempty"`
 		NullActive            *schema.Status  `json:"null_active,omitempty"`
@@ -457,6 +471,7 @@ func (ft *FieldTypes) FromResponse(res *gremlin.Response) error {
 			OptionalUint16:        v.OptionalUint16,
 			OptionalUint32:        v.OptionalUint32,
 			OptionalUint64:        v.OptionalUint64,
+			Duration:              v.Duration,
 			State:                 v.State,
 			OptionalFloat:         v.OptionalFloat,
 			OptionalFloat32:       v.OptionalFloat32,
@@ -467,6 +482,7 @@ func (ft *FieldTypes) FromResponse(res *gremlin.Response) error {
 			Str:                   v.Str,
 			NullStr:               v.NullStr,
 			Link:                  v.Link,
+			LinkOther:             v.LinkOther,
 			NullLink:              v.NullLink,
 			Active:                v.Active,
 			NullActive:            v.NullActive,

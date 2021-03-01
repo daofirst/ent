@@ -7,12 +7,12 @@ package rule
 import (
 	"context"
 
-	"github.com/facebook/ent/examples/privacytenant/ent"
-	"github.com/facebook/ent/examples/privacytenant/ent/predicate"
-	"github.com/facebook/ent/examples/privacytenant/ent/privacy"
-	"github.com/facebook/ent/examples/privacytenant/ent/tenant"
-	"github.com/facebook/ent/examples/privacytenant/ent/user"
-	"github.com/facebook/ent/examples/privacytenant/viewer"
+	"entgo.io/ent/examples/privacytenant/ent"
+	"entgo.io/ent/examples/privacytenant/ent/predicate"
+	"entgo.io/ent/examples/privacytenant/ent/privacy"
+	"entgo.io/ent/examples/privacytenant/ent/tenant"
+	"entgo.io/ent/examples/privacytenant/ent/user"
+	"entgo.io/ent/examples/privacytenant/viewer"
 )
 
 // DenyIfNoViewer is a rule that returns deny decision if the viewer is missing in the context.
@@ -40,7 +40,7 @@ func AllowIfAdmin() privacy.QueryMutationRule {
 }
 
 // FilterTenantRule is a query rule that filters out entities that are not in the tenant.
-func FilterTenantRule() privacy.QueryRule {
+func FilterTenantRule() privacy.QueryMutationRule {
 	type TeamsFilter interface {
 		WhereHasTenantWith(...predicate.Tenant)
 	}

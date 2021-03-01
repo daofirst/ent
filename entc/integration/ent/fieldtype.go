@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
 	"github.com/google/uuid"
 )
 
@@ -67,6 +67,8 @@ type FieldType struct {
 	OptionalUint32 uint32 `json:"optional_uint32,omitempty"`
 	// OptionalUint64 holds the value of the "optional_uint64" field.
 	OptionalUint64 uint64 `json:"optional_uint64,omitempty"`
+	// Duration holds the value of the "duration" field.
+	Duration time.Duration `json:"duration,omitempty"`
 	// State holds the value of the "state" field.
 	State fieldtype.State `json:"state,omitempty"`
 	// OptionalFloat holds the value of the "optional_float" field.
@@ -87,6 +89,8 @@ type FieldType struct {
 	NullStr *sql.NullString `json:"null_str,omitempty"`
 	// Link holds the value of the "link" field.
 	Link schema.Link `json:"link,omitempty"`
+	// LinkOther holds the value of the "link_other" field.
+	LinkOther schema.Link `json:"link_other,omitempty"`
 	// NullLink holds the value of the "null_link" field.
 	NullLink *schema.Link `json:"null_link,omitempty"`
 	// Active holds the value of the "active" field.
@@ -129,7 +133,7 @@ func (*FieldType) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case fieldtype.FieldIP:
 			values[i] = &[]byte{}
-		case fieldtype.FieldLink, fieldtype.FieldNullLink:
+		case fieldtype.FieldLink, fieldtype.FieldLinkOther, fieldtype.FieldNullLink:
 			values[i] = &schema.Link{}
 		case fieldtype.FieldMAC:
 			values[i] = &schema.MAC{}
@@ -137,7 +141,7 @@ func (*FieldType) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = &sql.NullBool{}
 		case fieldtype.FieldOptionalFloat, fieldtype.FieldOptionalFloat32, fieldtype.FieldDecimal, fieldtype.FieldSchemaFloat, fieldtype.FieldSchemaFloat32, fieldtype.FieldNullFloat:
 			values[i] = &sql.NullFloat64{}
-		case fieldtype.FieldID, fieldtype.FieldInt, fieldtype.FieldInt8, fieldtype.FieldInt16, fieldtype.FieldInt32, fieldtype.FieldInt64, fieldtype.FieldOptionalInt, fieldtype.FieldOptionalInt8, fieldtype.FieldOptionalInt16, fieldtype.FieldOptionalInt32, fieldtype.FieldOptionalInt64, fieldtype.FieldNillableInt, fieldtype.FieldNillableInt8, fieldtype.FieldNillableInt16, fieldtype.FieldNillableInt32, fieldtype.FieldNillableInt64, fieldtype.FieldValidateOptionalInt32, fieldtype.FieldOptionalUint, fieldtype.FieldOptionalUint8, fieldtype.FieldOptionalUint16, fieldtype.FieldOptionalUint32, fieldtype.FieldOptionalUint64, fieldtype.FieldNullInt64, fieldtype.FieldSchemaInt, fieldtype.FieldSchemaInt8, fieldtype.FieldSchemaInt64:
+		case fieldtype.FieldID, fieldtype.FieldInt, fieldtype.FieldInt8, fieldtype.FieldInt16, fieldtype.FieldInt32, fieldtype.FieldInt64, fieldtype.FieldOptionalInt, fieldtype.FieldOptionalInt8, fieldtype.FieldOptionalInt16, fieldtype.FieldOptionalInt32, fieldtype.FieldOptionalInt64, fieldtype.FieldNillableInt, fieldtype.FieldNillableInt8, fieldtype.FieldNillableInt16, fieldtype.FieldNillableInt32, fieldtype.FieldNillableInt64, fieldtype.FieldValidateOptionalInt32, fieldtype.FieldOptionalUint, fieldtype.FieldOptionalUint8, fieldtype.FieldOptionalUint16, fieldtype.FieldOptionalUint32, fieldtype.FieldOptionalUint64, fieldtype.FieldDuration, fieldtype.FieldNullInt64, fieldtype.FieldSchemaInt, fieldtype.FieldSchemaInt8, fieldtype.FieldSchemaInt64:
 			values[i] = &sql.NullInt64{}
 		case fieldtype.FieldState, fieldtype.FieldDir, fieldtype.FieldNdir, fieldtype.FieldStr, fieldtype.FieldNullStr, fieldtype.FieldRole:
 			values[i] = &sql.NullString{}
@@ -299,6 +303,12 @@ func (ft *FieldType) assignValues(columns []string, values []interface{}) error 
 			} else if value.Valid {
 				ft.OptionalUint64 = uint64(value.Int64)
 			}
+		case fieldtype.FieldDuration:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field duration", values[i])
+			} else if value.Valid {
+				ft.Duration = time.Duration(value.Int64)
+			}
 		case fieldtype.FieldState:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field state", values[i])
@@ -359,6 +369,12 @@ func (ft *FieldType) assignValues(columns []string, values []interface{}) error 
 				return fmt.Errorf("unexpected type %T for field link", values[i])
 			} else if value != nil {
 				ft.Link = *value
+			}
+		case fieldtype.FieldLinkOther:
+			if value, ok := values[i].(*schema.Link); !ok {
+				return fmt.Errorf("unexpected type %T for field link_other", values[i])
+			} else if value != nil {
+				ft.LinkOther = *value
 			}
 		case fieldtype.FieldNullLink:
 			if value, ok := values[i].(*schema.Link); !ok {
@@ -544,6 +560,8 @@ func (ft *FieldType) String() string {
 	builder.WriteString(fmt.Sprintf("%v", ft.OptionalUint32))
 	builder.WriteString(", optional_uint64=")
 	builder.WriteString(fmt.Sprintf("%v", ft.OptionalUint64))
+	builder.WriteString(", duration=")
+	builder.WriteString(fmt.Sprintf("%v", ft.Duration))
 	builder.WriteString(", state=")
 	builder.WriteString(fmt.Sprintf("%v", ft.State))
 	builder.WriteString(", optional_float=")
@@ -568,6 +586,8 @@ func (ft *FieldType) String() string {
 	}
 	builder.WriteString(", link=")
 	builder.WriteString(fmt.Sprintf("%v", ft.Link))
+	builder.WriteString(", link_other=")
+	builder.WriteString(fmt.Sprintf("%v", ft.LinkOther))
 	if v := ft.NullLink; v != nil {
 		builder.WriteString(", null_link=")
 		builder.WriteString(fmt.Sprintf("%v", *v))

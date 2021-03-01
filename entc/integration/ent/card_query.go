@@ -13,13 +13,13 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/spec"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/spec"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // CardQuery is the builder for querying Card entities.
@@ -70,7 +70,7 @@ func (cq *CardQuery) QueryOwner() *UserQuery {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cq.sqlQuery()
+		selector := cq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func (cq *CardQuery) QuerySpec() *SpecQuery {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := cq.sqlQuery()
+		selector := cq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -340,7 +340,7 @@ func (cq *CardQuery) GroupBy(field string, fields ...string) *CardGroupBy {
 		if err := cq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return cq.sqlQuery(), nil
+		return cq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -565,7 +565,7 @@ func (cq *CardQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (cq *CardQuery) sqlQuery() *sql.Selector {
+func (cq *CardQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(cq.driver.Dialect())
 	t1 := builder.Table(card.Table)
 	selector := builder.Select(t1.Columns(card.Columns...)...).From(t1)
@@ -860,7 +860,7 @@ func (cs *CardSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := cs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	cs.sql = cs.CardQuery.sqlQuery()
+	cs.sql = cs.CardQuery.sqlQuery(ctx)
 	return cs.sqlScan(ctx, v)
 }
 

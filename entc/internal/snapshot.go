@@ -11,8 +11,8 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/facebook/ent/entc/gen"
-	"github.com/facebook/ent/entc/load"
+	"entgo.io/ent/entc/gen"
+	"entgo.io/ent/entc/load"
 )
 
 // Snapshot describes the schema snapshot restore.
@@ -218,7 +218,13 @@ func IsBuildError(err error) bool {
 	if strings.HasPrefix(err.Error(), "entc/load: #") {
 		return true
 	}
-	for _, s := range []string{"syntax error", "previous declaration", "invalid character", "could not import"} {
+	for _, s := range []string{
+		"syntax error",
+		"previous declaration",
+		"invalid character",
+		"could not import",
+		"found '<<'",
+	} {
 		if strings.Contains(err.Error(), s) {
 			return true
 		}

@@ -13,13 +13,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
 
@@ -533,6 +533,33 @@ func (ftu *FieldTypeUpdate) ClearOptionalUint64() *FieldTypeUpdate {
 	return ftu
 }
 
+// SetDuration sets the "duration" field.
+func (ftu *FieldTypeUpdate) SetDuration(t time.Duration) *FieldTypeUpdate {
+	ftu.mutation.ResetDuration()
+	ftu.mutation.SetDuration(t)
+	return ftu
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftu *FieldTypeUpdate) SetNillableDuration(t *time.Duration) *FieldTypeUpdate {
+	if t != nil {
+		ftu.SetDuration(*t)
+	}
+	return ftu
+}
+
+// AddDuration adds t to the "duration" field.
+func (ftu *FieldTypeUpdate) AddDuration(t time.Duration) *FieldTypeUpdate {
+	ftu.mutation.AddDuration(t)
+	return ftu
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (ftu *FieldTypeUpdate) ClearDuration() *FieldTypeUpdate {
+	ftu.mutation.ClearDuration()
+	return ftu
+}
+
 // SetState sets the "state" field.
 func (ftu *FieldTypeUpdate) SetState(f fieldtype.State) *FieldTypeUpdate {
 	ftu.mutation.SetState(f)
@@ -727,6 +754,18 @@ func (ftu *FieldTypeUpdate) SetLink(s schema.Link) *FieldTypeUpdate {
 // ClearLink clears the value of the "link" field.
 func (ftu *FieldTypeUpdate) ClearLink() *FieldTypeUpdate {
 	ftu.mutation.ClearLink()
+	return ftu
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftu *FieldTypeUpdate) SetLinkOther(s schema.Link) *FieldTypeUpdate {
+	ftu.mutation.SetLinkOther(s)
+	return ftu
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (ftu *FieldTypeUpdate) ClearLinkOther() *FieldTypeUpdate {
+	ftu.mutation.ClearLinkOther()
 	return ftu
 }
 
@@ -1522,6 +1561,26 @@ func (ftu *FieldTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: fieldtype.FieldOptionalUint64,
 		})
 	}
+	if value, ok := ftu.mutation.Duration(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Value:  value,
+			Column: fieldtype.FieldDuration,
+		})
+	}
+	if value, ok := ftu.mutation.AddedDuration(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Value:  value,
+			Column: fieldtype.FieldDuration,
+		})
+	}
+	if ftu.mutation.DurationCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Column: fieldtype.FieldDuration,
+		})
+	}
 	if value, ok := ftu.mutation.State(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -1671,6 +1730,19 @@ func (ftu *FieldTypeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: fieldtype.FieldLink,
+		})
+	}
+	if value, ok := ftu.mutation.LinkOther(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeOther,
+			Value:  value,
+			Column: fieldtype.FieldLinkOther,
+		})
+	}
+	if ftu.mutation.LinkOtherCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeOther,
+			Column: fieldtype.FieldLinkOther,
 		})
 	}
 	if value, ok := ftu.mutation.NullLink(); ok {
@@ -2425,6 +2497,33 @@ func (ftuo *FieldTypeUpdateOne) ClearOptionalUint64() *FieldTypeUpdateOne {
 	return ftuo
 }
 
+// SetDuration sets the "duration" field.
+func (ftuo *FieldTypeUpdateOne) SetDuration(t time.Duration) *FieldTypeUpdateOne {
+	ftuo.mutation.ResetDuration()
+	ftuo.mutation.SetDuration(t)
+	return ftuo
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftuo *FieldTypeUpdateOne) SetNillableDuration(t *time.Duration) *FieldTypeUpdateOne {
+	if t != nil {
+		ftuo.SetDuration(*t)
+	}
+	return ftuo
+}
+
+// AddDuration adds t to the "duration" field.
+func (ftuo *FieldTypeUpdateOne) AddDuration(t time.Duration) *FieldTypeUpdateOne {
+	ftuo.mutation.AddDuration(t)
+	return ftuo
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (ftuo *FieldTypeUpdateOne) ClearDuration() *FieldTypeUpdateOne {
+	ftuo.mutation.ClearDuration()
+	return ftuo
+}
+
 // SetState sets the "state" field.
 func (ftuo *FieldTypeUpdateOne) SetState(f fieldtype.State) *FieldTypeUpdateOne {
 	ftuo.mutation.SetState(f)
@@ -2619,6 +2718,18 @@ func (ftuo *FieldTypeUpdateOne) SetLink(s schema.Link) *FieldTypeUpdateOne {
 // ClearLink clears the value of the "link" field.
 func (ftuo *FieldTypeUpdateOne) ClearLink() *FieldTypeUpdateOne {
 	ftuo.mutation.ClearLink()
+	return ftuo
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftuo *FieldTypeUpdateOne) SetLinkOther(s schema.Link) *FieldTypeUpdateOne {
+	ftuo.mutation.SetLinkOther(s)
+	return ftuo
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (ftuo *FieldTypeUpdateOne) ClearLinkOther() *FieldTypeUpdateOne {
+	ftuo.mutation.ClearLinkOther()
 	return ftuo
 }
 
@@ -3022,6 +3133,13 @@ func (ftuo *FieldTypeUpdateOne) sqlSave(ctx context.Context) (_node *FieldType, 
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing FieldType.ID for update")}
 	}
 	_spec.Node.ID.Value = id
+	if ps := ftuo.mutation.predicates; len(ps) > 0 {
+		_spec.Predicate = func(selector *sql.Selector) {
+			for i := range ps {
+				ps[i](selector)
+			}
+		}
+	}
 	if value, ok := ftuo.mutation.Int(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeInt,
@@ -3412,6 +3530,26 @@ func (ftuo *FieldTypeUpdateOne) sqlSave(ctx context.Context) (_node *FieldType, 
 			Column: fieldtype.FieldOptionalUint64,
 		})
 	}
+	if value, ok := ftuo.mutation.Duration(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Value:  value,
+			Column: fieldtype.FieldDuration,
+		})
+	}
+	if value, ok := ftuo.mutation.AddedDuration(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Value:  value,
+			Column: fieldtype.FieldDuration,
+		})
+	}
+	if ftuo.mutation.DurationCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Column: fieldtype.FieldDuration,
+		})
+	}
 	if value, ok := ftuo.mutation.State(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -3561,6 +3699,19 @@ func (ftuo *FieldTypeUpdateOne) sqlSave(ctx context.Context) (_node *FieldType, 
 		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Column: fieldtype.FieldLink,
+		})
+	}
+	if value, ok := ftuo.mutation.LinkOther(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeOther,
+			Value:  value,
+			Column: fieldtype.FieldLinkOther,
+		})
+	}
+	if ftuo.mutation.LinkOtherCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeOther,
+			Column: fieldtype.FieldLinkOther,
 		})
 	}
 	if value, ok := ftuo.mutation.NullLink(); ok {

@@ -13,14 +13,14 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/user"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/user"
+	"entgo.io/ent/schema/field"
 )
 
 // FileQuery is the builder for querying File entities.
@@ -72,7 +72,7 @@ func (fq *FileQuery) QueryOwner() *UserQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := fq.sqlQuery()
+		selector := fq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -94,7 +94,7 @@ func (fq *FileQuery) QueryType() *FileTypeQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := fq.sqlQuery()
+		selector := fq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -116,7 +116,7 @@ func (fq *FileQuery) QueryField() *FieldTypeQuery {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := fq.sqlQuery()
+		selector := fq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -376,7 +376,7 @@ func (fq *FileQuery) GroupBy(field string, fields ...string) *FileGroupBy {
 		if err := fq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return fq.sqlQuery(), nil
+		return fq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -592,7 +592,7 @@ func (fq *FileQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (fq *FileQuery) sqlQuery() *sql.Selector {
+func (fq *FileQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(fq.driver.Dialect())
 	t1 := builder.Table(file.Table)
 	selector := builder.Select(t1.Columns(file.Columns...)...).From(t1)
@@ -887,7 +887,7 @@ func (fs *FileSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := fs.prepareQuery(ctx); err != nil {
 		return err
 	}
-	fs.sql = fs.FileQuery.sqlQuery()
+	fs.sql = fs.FileQuery.sqlQuery(ctx)
 	return fs.sqlScan(ctx, v)
 }
 

@@ -13,12 +13,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/group"
-	"github.com/facebook/ent/entc/integration/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/group"
+	"entgo.io/ent/entc/integration/ent/groupinfo"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/schema/field"
 )
 
 // GroupInfoQuery is the builder for querying GroupInfo entities.
@@ -67,7 +67,7 @@ func (giq *GroupInfoQuery) QueryGroups() *GroupQuery {
 		if err := giq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		selector := giq.sqlQuery()
+		selector := giq.sqlQuery(ctx)
 		if err := selector.Err(); err != nil {
 			return nil, err
 		}
@@ -303,7 +303,7 @@ func (giq *GroupInfoQuery) GroupBy(field string, fields ...string) *GroupInfoGro
 		if err := giq.prepareQuery(ctx); err != nil {
 			return nil, err
 		}
-		return giq.sqlQuery(), nil
+		return giq.sqlQuery(ctx), nil
 	}
 	return group
 }
@@ -460,7 +460,7 @@ func (giq *GroupInfoQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (giq *GroupInfoQuery) sqlQuery() *sql.Selector {
+func (giq *GroupInfoQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(giq.driver.Dialect())
 	t1 := builder.Table(groupinfo.Table)
 	selector := builder.Select(t1.Columns(groupinfo.Columns...)...).From(t1)
@@ -755,7 +755,7 @@ func (gis *GroupInfoSelect) Scan(ctx context.Context, v interface{}) error {
 	if err := gis.prepareQuery(ctx); err != nil {
 		return err
 	}
-	gis.sql = gis.GroupInfoQuery.sqlQuery()
+	gis.sql = gis.GroupInfoQuery.sqlQuery(ctx)
 	return gis.sqlScan(ctx, v)
 }
 

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/examples/o2o2types/ent/card"
-	"github.com/facebook/ent/examples/o2o2types/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/examples/o2o2types/ent/card"
+	"entgo.io/ent/examples/o2o2types/ent/user"
 )
 
 // Card is the model entity for the Card schema.
@@ -34,7 +34,7 @@ type Card struct {
 // CardEdges holds the relations/edges for other nodes in the graph.
 type CardEdges struct {
 	// Owner holds the value of the owner edge.
-	Owner *User
+	Owner *User `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [1]bool

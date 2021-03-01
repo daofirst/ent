@@ -14,12 +14,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/dialect/sql/sqlgraph"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/schema/field"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/schema/field"
 	"github.com/google/uuid"
 )
 
@@ -284,6 +284,20 @@ func (ftc *FieldTypeCreate) SetNillableOptionalUint64(u *uint64) *FieldTypeCreat
 	return ftc
 }
 
+// SetDuration sets the "duration" field.
+func (ftc *FieldTypeCreate) SetDuration(t time.Duration) *FieldTypeCreate {
+	ftc.mutation.SetDuration(t)
+	return ftc
+}
+
+// SetNillableDuration sets the "duration" field if the given value is not nil.
+func (ftc *FieldTypeCreate) SetNillableDuration(t *time.Duration) *FieldTypeCreate {
+	if t != nil {
+		ftc.SetDuration(*t)
+	}
+	return ftc
+}
+
 // SetState sets the "state" field.
 func (ftc *FieldTypeCreate) SetState(f fieldtype.State) *FieldTypeCreate {
 	ftc.mutation.SetState(f)
@@ -397,6 +411,12 @@ func (ftc *FieldTypeCreate) SetNullStr(ss sql.NullString) *FieldTypeCreate {
 // SetLink sets the "link" field.
 func (ftc *FieldTypeCreate) SetLink(s schema.Link) *FieldTypeCreate {
 	ftc.mutation.SetLink(s)
+	return ftc
+}
+
+// SetLinkOther sets the "link_other" field.
+func (ftc *FieldTypeCreate) SetLinkOther(s schema.Link) *FieldTypeCreate {
+	ftc.mutation.SetLinkOther(s)
 	return ftc
 }
 
@@ -875,6 +895,14 @@ func (ftc *FieldTypeCreate) createSpec() (*FieldType, *sqlgraph.CreateSpec) {
 		})
 		_node.OptionalUint64 = value
 	}
+	if value, ok := ftc.mutation.Duration(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt64,
+			Value:  value,
+			Column: fieldtype.FieldDuration,
+		})
+		_node.Duration = value
+	}
 	if value, ok := ftc.mutation.State(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeEnum,
@@ -954,6 +982,14 @@ func (ftc *FieldTypeCreate) createSpec() (*FieldType, *sqlgraph.CreateSpec) {
 			Column: fieldtype.FieldLink,
 		})
 		_node.Link = value
+	}
+	if value, ok := ftc.mutation.LinkOther(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeOther,
+			Value:  value,
+			Column: fieldtype.FieldLinkOther,
+		})
+		_node.LinkOther = value
 	}
 	if value, ok := ftc.mutation.NullLink(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{

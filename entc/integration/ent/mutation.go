@@ -14,25 +14,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/facebook/ent/dialect/sql"
-	"github.com/facebook/ent/entc/integration/ent/card"
-	"github.com/facebook/ent/entc/integration/ent/comment"
-	"github.com/facebook/ent/entc/integration/ent/fieldtype"
-	"github.com/facebook/ent/entc/integration/ent/file"
-	"github.com/facebook/ent/entc/integration/ent/filetype"
-	"github.com/facebook/ent/entc/integration/ent/group"
-	"github.com/facebook/ent/entc/integration/ent/groupinfo"
-	"github.com/facebook/ent/entc/integration/ent/node"
-	"github.com/facebook/ent/entc/integration/ent/pet"
-	"github.com/facebook/ent/entc/integration/ent/predicate"
-	"github.com/facebook/ent/entc/integration/ent/role"
-	"github.com/facebook/ent/entc/integration/ent/schema"
-	"github.com/facebook/ent/entc/integration/ent/spec"
-	"github.com/facebook/ent/entc/integration/ent/task"
-	"github.com/facebook/ent/entc/integration/ent/user"
+	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/entc/integration/ent/card"
+	"entgo.io/ent/entc/integration/ent/comment"
+	"entgo.io/ent/entc/integration/ent/fieldtype"
+	"entgo.io/ent/entc/integration/ent/file"
+	"entgo.io/ent/entc/integration/ent/filetype"
+	"entgo.io/ent/entc/integration/ent/group"
+	"entgo.io/ent/entc/integration/ent/groupinfo"
+	"entgo.io/ent/entc/integration/ent/node"
+	"entgo.io/ent/entc/integration/ent/pet"
+	"entgo.io/ent/entc/integration/ent/predicate"
+	"entgo.io/ent/entc/integration/ent/role"
+	"entgo.io/ent/entc/integration/ent/schema"
+	"entgo.io/ent/entc/integration/ent/spec"
+	"entgo.io/ent/entc/integration/ent/task"
+	"entgo.io/ent/entc/integration/ent/user"
 	"github.com/google/uuid"
 
-	"github.com/facebook/ent"
+	"entgo.io/ent"
 )
 
 const (
@@ -1250,6 +1250,8 @@ type FieldTypeMutation struct {
 	addoptional_uint32         *uint32
 	optional_uint64            *uint64
 	addoptional_uint64         *uint64
+	duration                   *time.Duration
+	addduration                *time.Duration
 	state                      *fieldtype.State
 	optional_float             *float64
 	addoptional_float          *float64
@@ -1263,6 +1265,7 @@ type FieldTypeMutation struct {
 	str                        *sql.NullString
 	null_str                   *sql.NullString
 	link                       *schema.Link
+	link_other                 *schema.Link
 	null_link                  *schema.Link
 	active                     *schema.Status
 	null_active                *schema.Status
@@ -2769,6 +2772,76 @@ func (m *FieldTypeMutation) ResetOptionalUint64() {
 	delete(m.clearedFields, fieldtype.FieldOptionalUint64)
 }
 
+// SetDuration sets the "duration" field.
+func (m *FieldTypeMutation) SetDuration(t time.Duration) {
+	m.duration = &t
+	m.addduration = nil
+}
+
+// Duration returns the value of the "duration" field in the mutation.
+func (m *FieldTypeMutation) Duration() (r time.Duration, exists bool) {
+	v := m.duration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDuration returns the old "duration" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldDuration(ctx context.Context) (v time.Duration, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDuration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDuration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDuration: %w", err)
+	}
+	return oldValue.Duration, nil
+}
+
+// AddDuration adds t to the "duration" field.
+func (m *FieldTypeMutation) AddDuration(t time.Duration) {
+	if m.addduration != nil {
+		*m.addduration += t
+	} else {
+		m.addduration = &t
+	}
+}
+
+// AddedDuration returns the value that was added to the "duration" field in this mutation.
+func (m *FieldTypeMutation) AddedDuration() (r time.Duration, exists bool) {
+	v := m.addduration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (m *FieldTypeMutation) ClearDuration() {
+	m.duration = nil
+	m.addduration = nil
+	m.clearedFields[fieldtype.FieldDuration] = struct{}{}
+}
+
+// DurationCleared returns if the "duration" field was cleared in this mutation.
+func (m *FieldTypeMutation) DurationCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldDuration]
+	return ok
+}
+
+// ResetDuration resets all changes to the "duration" field.
+func (m *FieldTypeMutation) ResetDuration() {
+	m.duration = nil
+	m.addduration = nil
+	delete(m.clearedFields, fieldtype.FieldDuration)
+}
+
 // SetState sets the "state" field.
 func (m *FieldTypeMutation) SetState(f fieldtype.State) {
 	m.state = &f
@@ -3320,6 +3393,55 @@ func (m *FieldTypeMutation) LinkCleared() bool {
 func (m *FieldTypeMutation) ResetLink() {
 	m.link = nil
 	delete(m.clearedFields, fieldtype.FieldLink)
+}
+
+// SetLinkOther sets the "link_other" field.
+func (m *FieldTypeMutation) SetLinkOther(s schema.Link) {
+	m.link_other = &s
+}
+
+// LinkOther returns the value of the "link_other" field in the mutation.
+func (m *FieldTypeMutation) LinkOther() (r schema.Link, exists bool) {
+	v := m.link_other
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLinkOther returns the old "link_other" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldLinkOther(ctx context.Context) (v schema.Link, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLinkOther is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLinkOther requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLinkOther: %w", err)
+	}
+	return oldValue.LinkOther, nil
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (m *FieldTypeMutation) ClearLinkOther() {
+	m.link_other = nil
+	m.clearedFields[fieldtype.FieldLinkOther] = struct{}{}
+}
+
+// LinkOtherCleared returns if the "link_other" field was cleared in this mutation.
+func (m *FieldTypeMutation) LinkOtherCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldLinkOther]
+	return ok
+}
+
+// ResetLinkOther resets all changes to the "link_other" field.
+func (m *FieldTypeMutation) ResetLinkOther() {
+	m.link_other = nil
+	delete(m.clearedFields, fieldtype.FieldLinkOther)
 }
 
 // SetNullLink sets the "null_link" field.
@@ -4212,7 +4334,7 @@ func (m *FieldTypeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FieldTypeMutation) Fields() []string {
-	fields := make([]string, 0, 47)
+	fields := make([]string, 0, 49)
 	if m.int != nil {
 		fields = append(fields, fieldtype.FieldInt)
 	}
@@ -4276,6 +4398,9 @@ func (m *FieldTypeMutation) Fields() []string {
 	if m.optional_uint64 != nil {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
+	if m.duration != nil {
+		fields = append(fields, fieldtype.FieldDuration)
+	}
 	if m.state != nil {
 		fields = append(fields, fieldtype.FieldState)
 	}
@@ -4305,6 +4430,9 @@ func (m *FieldTypeMutation) Fields() []string {
 	}
 	if m.link != nil {
 		fields = append(fields, fieldtype.FieldLink)
+	}
+	if m.link_other != nil {
+		fields = append(fields, fieldtype.FieldLinkOther)
 	}
 	if m.null_link != nil {
 		fields = append(fields, fieldtype.FieldNullLink)
@@ -4404,6 +4532,8 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.OptionalUint32()
 	case fieldtype.FieldOptionalUint64:
 		return m.OptionalUint64()
+	case fieldtype.FieldDuration:
+		return m.Duration()
 	case fieldtype.FieldState:
 		return m.State()
 	case fieldtype.FieldOptionalFloat:
@@ -4424,6 +4554,8 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.NullStr()
 	case fieldtype.FieldLink:
 		return m.Link()
+	case fieldtype.FieldLinkOther:
+		return m.LinkOther()
 	case fieldtype.FieldNullLink:
 		return m.NullLink()
 	case fieldtype.FieldActive:
@@ -4507,6 +4639,8 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldOptionalUint32(ctx)
 	case fieldtype.FieldOptionalUint64:
 		return m.OldOptionalUint64(ctx)
+	case fieldtype.FieldDuration:
+		return m.OldDuration(ctx)
 	case fieldtype.FieldState:
 		return m.OldState(ctx)
 	case fieldtype.FieldOptionalFloat:
@@ -4527,6 +4661,8 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldNullStr(ctx)
 	case fieldtype.FieldLink:
 		return m.OldLink(ctx)
+	case fieldtype.FieldLinkOther:
+		return m.OldLinkOther(ctx)
 	case fieldtype.FieldNullLink:
 		return m.OldNullLink(ctx)
 	case fieldtype.FieldActive:
@@ -4715,6 +4851,13 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetOptionalUint64(v)
 		return nil
+	case fieldtype.FieldDuration:
+		v, ok := value.(time.Duration)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDuration(v)
+		return nil
 	case fieldtype.FieldState:
 		v, ok := value.(fieldtype.State)
 		if !ok {
@@ -4784,6 +4927,13 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLink(v)
+		return nil
+	case fieldtype.FieldLinkOther:
+		v, ok := value.(schema.Link)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLinkOther(v)
 		return nil
 	case fieldtype.FieldNullLink:
 		v, ok := value.(schema.Link)
@@ -4968,6 +5118,9 @@ func (m *FieldTypeMutation) AddedFields() []string {
 	if m.addoptional_uint64 != nil {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
+	if m.addduration != nil {
+		fields = append(fields, fieldtype.FieldDuration)
+	}
 	if m.addoptional_float != nil {
 		fields = append(fields, fieldtype.FieldOptionalFloat)
 	}
@@ -5042,6 +5195,8 @@ func (m *FieldTypeMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedOptionalUint32()
 	case fieldtype.FieldOptionalUint64:
 		return m.AddedOptionalUint64()
+	case fieldtype.FieldDuration:
+		return m.AddedDuration()
 	case fieldtype.FieldOptionalFloat:
 		return m.AddedOptionalFloat()
 	case fieldtype.FieldOptionalFloat32:
@@ -5214,6 +5369,13 @@ func (m *FieldTypeMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddOptionalUint64(v)
 		return nil
+	case fieldtype.FieldDuration:
+		v, ok := value.(time.Duration)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDuration(v)
+		return nil
 	case fieldtype.FieldOptionalFloat:
 		v, ok := value.(float64)
 		if !ok {
@@ -5326,6 +5488,9 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(fieldtype.FieldOptionalUint64) {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
+	if m.FieldCleared(fieldtype.FieldDuration) {
+		fields = append(fields, fieldtype.FieldDuration)
+	}
 	if m.FieldCleared(fieldtype.FieldState) {
 		fields = append(fields, fieldtype.FieldState)
 	}
@@ -5355,6 +5520,9 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(fieldtype.FieldLink) {
 		fields = append(fields, fieldtype.FieldLink)
+	}
+	if m.FieldCleared(fieldtype.FieldLinkOther) {
+		fields = append(fields, fieldtype.FieldLinkOther)
 	}
 	if m.FieldCleared(fieldtype.FieldNullLink) {
 		fields = append(fields, fieldtype.FieldNullLink)
@@ -5463,6 +5631,9 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 	case fieldtype.FieldOptionalUint64:
 		m.ClearOptionalUint64()
 		return nil
+	case fieldtype.FieldDuration:
+		m.ClearDuration()
+		return nil
 	case fieldtype.FieldState:
 		m.ClearState()
 		return nil
@@ -5492,6 +5663,9 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 		return nil
 	case fieldtype.FieldLink:
 		m.ClearLink()
+		return nil
+	case fieldtype.FieldLinkOther:
+		m.ClearLinkOther()
 		return nil
 	case fieldtype.FieldNullLink:
 		m.ClearNullLink()
@@ -5609,6 +5783,9 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 	case fieldtype.FieldOptionalUint64:
 		m.ResetOptionalUint64()
 		return nil
+	case fieldtype.FieldDuration:
+		m.ResetDuration()
+		return nil
 	case fieldtype.FieldState:
 		m.ResetState()
 		return nil
@@ -5638,6 +5815,9 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 		return nil
 	case fieldtype.FieldLink:
 		m.ResetLink()
+		return nil
+	case fieldtype.FieldLinkOther:
+		m.ResetLinkOther()
 		return nil
 	case fieldtype.FieldNullLink:
 		m.ResetNullLink()
