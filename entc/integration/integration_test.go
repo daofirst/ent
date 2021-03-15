@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/entc/integration/ent"
 	"entgo.io/ent/entc/integration/ent/enttest"
 	"entgo.io/ent/entc/integration/ent/file"
@@ -135,6 +136,7 @@ var (
 		EagerLoading,
 		Mutation,
 		CreateBulk,
+		ConstraintChecks,
 	}
 )
 
@@ -208,7 +210,7 @@ func Sanity(t *testing.T, client *ent.Client) {
 	require.Equal("baz", usr.Name)
 	require.NotEmpty(usr.QueryGroups().AllX(ctx))
 	// update unknown vertex.
-	_, err := client.User.UpdateOneID(usr.ID + usr.ID).SetName("foo").Save(ctx)
+	_, err := client.User.UpdateOneID(usr.ID + math.MaxInt8).SetName("foo").Save(ctx)
 	require.Error(err)
 	require.True(ent.IsNotFound(err))
 
@@ -1350,6 +1352,20 @@ func CreateBulk(t *testing.T, client *ent.Client) {
 	require.Equal(t, users[1].ID, pets[1].QueryOwner().OnlyIDX(ctx))
 	require.Equal(t, "layla", pets[2].Name)
 	require.False(t, pets[2].QueryOwner().ExistX(ctx))
+}
+
+func ConstraintChecks(t *testing.T, client *ent.Client) {
+	var cerr *ent.ConstraintError
+	_, err := client.Pet.Create().SetName("orphan").SetOwnerID(0).Save(context.Background())
+	require.True(t, errors.As(err, &cerr))
+	require.True(t, sqlgraph.IsForeignKeyConstraintError(err))
+	require.False(t, sqlgraph.IsUniqueConstraintError(err))
+
+	client.FileType.Create().SetName("a unique name").SaveX(context.Background())
+	_, err = client.FileType.Create().SetName("a unique name").Save(context.Background())
+	require.True(t, errors.As(err, &cerr))
+	require.False(t, sqlgraph.IsForeignKeyConstraintError(err))
+	require.True(t, sqlgraph.IsUniqueConstraintError(err))
 }
 
 func drop(t *testing.T, client *ent.Client) {

@@ -67,7 +67,7 @@ Add a `generate.go` file to your project under `<project>/ent`:
 ```go
 package ent
 
-//go:generate go run entgo.io/ent/cmd/ent generate ./schema
+//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate ./schema
 ```
 
 Finally, you can run `go generate ./ent` from the root directory of your project
@@ -140,7 +140,7 @@ func main() {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/entcpkg).
+The full example exists in [GitHub](https://github.com/ent/ent/tree/master/examples/entcpkg).
 
 
 ## Schema Description

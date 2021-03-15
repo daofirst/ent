@@ -158,14 +158,19 @@ var (
 	}
 	// patterns for extending partial-templates (included by other templates).
 	partialPatterns = [...]string{
-		"import/additional/*",
-		"dialect/*/import/additional/*",
-		"dialect/*/*/spec/*",
 		"dialect/*/*/*/spec/*",
-		"dialect/sql/query/path/*",
-		"dialect/sql/query/from/*",
+		"dialect/*/*/spec/*",
+		"dialect/*/import/additional/*",
 		"dialect/*/query/selector/*",
+		"dialect/sql/model/additional/*",
+		"dialect/sql/model/fields/*",
 		"dialect/sql/predicate/edge/*/*",
+		"dialect/sql/query/additional/*",
+		"dialect/sql/query/from/*",
+		"dialect/sql/query/path/*",
+		"import/additional/*",
+		"model/additional/*",
+		"model/comment/additional/*",
 	}
 	// templates holds the Go templates for the code generation.
 	templates *Template
@@ -251,7 +256,7 @@ func (t *Template) ParseGlob(pattern string) (*Template, error) {
 func (t *Template) ParseDir(path string) (*Template, error) {
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("walk path %s: %v", path, err)
+			return fmt.Errorf("walk path %s: %w", path, err)
 		}
 		if info.IsDir() || strings.HasSuffix(path, ".go") {
 			return nil

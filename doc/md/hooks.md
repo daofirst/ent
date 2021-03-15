@@ -17,7 +17,6 @@ There are 5 types of mutations:
 - `DeleteOne` - Delete a node from the graph.
 - `Delete` - Delete all nodes that match a predicate.
 
-<br>
 Each generated node type has its own type of mutation. For example, all [`User` builders](crud.md#create-an-entity), share
 the same generated `UserMutation` object.
 
@@ -191,8 +190,16 @@ func (Card) Hooks() []ent.Hook {
 	}
 }
 ```
-> **Note that** if you use **schema hooks**, you **MUST** add the following import in the
-> main package, because a circular import is possible.
+
+## Hooks Registration
+
+When using [**schema hooks**](#schema-hooks), there's a chance of a cyclic import between the schema package,
+and the generated ent package. To avoid this scenario, ent generates an `ent/runtime` package which is responsible
+for registering the schema-hooks at runtime.
+
+> Users **MUST** import the `ent/runtime` in order to register the schema hooks.
+> The package can be imported in the `main` package (close to where the database driver is imported),
+> or in the package that creates the `ent.Client`.
 >
 > ```go
 > import _ "<project>/ent/runtime"

@@ -1,8 +1,9 @@
+
 /**
- * Copyright (c) 2017-present, Facebook, Inc.
+ * Copyright 2019-present Facebook Inc. All rights reserved.
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the Apache 2.0 license found
+ * in the LICENSE file in the root directory of this source tree.
  *
  * @format
  */
@@ -74,7 +75,7 @@ class HomeSplash extends React.Component {
     const ProjectTitle = () => (
       <div>
         <div className="projectTitleContainer">
-          <img src="https://s3.eu-central-1.amazonaws.com/entgo.io/assets/logo.png" />
+          <img src="https://entgo.io/assets/logo.png" />
           <div className="projectTitle">
             <p>{siteConfig.tagline}</p>
           </div>
@@ -115,7 +116,7 @@ class HomeSplash extends React.Component {
             </a>
           </div>
           <div className="gopherGraph">
-            <img src="https://s3.eu-central-1.amazonaws.com/entgo.io/assets/gopher_graph.png" />
+            <img src="https://entgo.io/assets/gopher_graph.png" />
           </div>
           <Features />
         </div>

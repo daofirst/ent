@@ -19,16 +19,16 @@ const (
 	FieldCreateTime = "create_time"
 	// FieldUpdateTime holds the string denoting the update_time field in the database.
 	FieldUpdateTime = "update_time"
+	// FieldBalance holds the string denoting the balance field in the database.
+	FieldBalance = "balance"
 	// FieldNumber holds the string denoting the number field in the database.
 	FieldNumber = "number"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
-
 	// EdgeOwner holds the string denoting the owner edge name in mutations.
 	EdgeOwner = "owner"
 	// EdgeSpec holds the string denoting the spec edge name in mutations.
 	EdgeSpec = "spec"
-
 	// Table holds the table name of the card in the database.
 	Table = "cards"
 	// OwnerTable is the table the holds the owner relation/edge.
@@ -50,11 +50,13 @@ var Columns = []string{
 	FieldID,
 	FieldCreateTime,
 	FieldUpdateTime,
+	FieldBalance,
 	FieldNumber,
 	FieldName,
 }
 
-// ForeignKeys holds the SQL foreign-keys that are owned by the Card type.
+// ForeignKeys holds the SQL foreign-keys that are owned by the "cards"
+// table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
 	"user_card",
 }
@@ -87,6 +89,8 @@ var (
 	DefaultUpdateTime func() time.Time
 	// UpdateDefaultUpdateTime holds the default value on update for the "update_time" field.
 	UpdateDefaultUpdateTime func() time.Time
+	// DefaultBalance holds the default value on creation for the "balance" field.
+	DefaultBalance float64
 	// NumberValidator is a validator for the "number" field. It is called by the builders before save.
 	NumberValidator func(string) error
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.

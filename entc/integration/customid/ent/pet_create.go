@@ -30,6 +30,14 @@ func (pc *PetCreate) SetID(s string) *PetCreate {
 	return pc
 }
 
+// SetNillableID sets the "id" field if the given value is not nil.
+func (pc *PetCreate) SetNillableID(s *string) *PetCreate {
+	if s != nil {
+		pc.SetID(*s)
+	}
+	return pc
+}
+
 // SetOwnerID sets the "owner" edge to the User entity by ID.
 func (pc *PetCreate) SetOwnerID(id int) *PetCreate {
 	pc.mutation.SetOwnerID(id)
@@ -109,6 +117,7 @@ func (pc *PetCreate) Save(ctx context.Context) (*Pet, error) {
 		err  error
 		node *Pet
 	)
+	pc.defaults()
 	if len(pc.hooks) == 0 {
 		if err = pc.check(); err != nil {
 			return nil, err
@@ -145,6 +154,14 @@ func (pc *PetCreate) SaveX(ctx context.Context) *Pet {
 		panic(err)
 	}
 	return v
+}
+
+// defaults sets the default values of the builder before save.
+func (pc *PetCreate) defaults() {
+	if _, ok := pc.mutation.ID(); !ok {
+		v := pet.DefaultID()
+		pc.mutation.SetID(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -200,6 +217,7 @@ func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_pets = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := pc.mutation.CarsIDs(); len(nodes) > 0 {
@@ -257,6 +275,7 @@ func (pc *PetCreate) createSpec() (*Pet, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.pet_best_friend = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -276,6 +295,7 @@ func (pcb *PetCreateBulk) Save(ctx context.Context) ([]*Pet, error) {
 	for i := range pcb.builders {
 		func(i int, root context.Context) {
 			builder := pcb.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*PetMutation)
 				if !ok {

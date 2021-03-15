@@ -8,7 +8,7 @@ title: Fields
 Fields (or properties) in the schema are the attributes of the node. For example, a `User`
 with 4 fields: `age`, `name`, `username` and `created_at`:
 
-![re-fields-properties](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/er_fields_properties.png)
+![re-fields-properties](https://entgo.io/assets/er_fields_properties.png)
 
 Fields are returned from the schema using the `Fields` method. For example:
 
@@ -55,8 +55,6 @@ The following types are currently supported by the framework:
 - `Enum` (SQL only).
 - `UUID` (SQL only).
 - `Other` (SQL only).
-
-<br/>
 
 ```go
 package schema

@@ -15,7 +15,7 @@ and maintain applications with large data-models and sticks with the following p
 
 <br/>
 
-![gopher-schema-as-code](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/gopher-schema-as-code.png)
+![gopher-schema-as-code](https://entgo.io/assets/gopher-schema-as-code.png)
 
 ## Installation
 
@@ -40,7 +40,7 @@ go mod init <project>
 Go to the root directory of your project, and run:
 
 ```console
-ent init User
+go run entgo.io/ent/cmd/ent init User
 ```
 The command above will generate the schema for `User` under `<project>/ent/schema/` directory:
 
@@ -160,7 +160,7 @@ func CreateUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		SetName("a8m").
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
+		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
 	log.Println("user was created: ", u)
 	return u, nil
@@ -190,7 +190,7 @@ func QueryUser(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		// or more than 1 user returned.
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed querying user: %v", err)
+		return nil, fmt.Errorf("failed querying user: %w", err)
 	}
 	log.Println("user returned: ", u)
 	return u, nil
@@ -239,7 +239,7 @@ func (Group) Fields() []ent.Field {
 Let's define our first relation. An edge from `User` to `Car` defining that a user
 can **have 1 or more** cars, but a car **has only one** owner (one-to-many relation).
 
-![er-user-cars](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_user_cars.png)
+![er-user-cars](https://entgo.io/assets/re_user_cars.png)
 
 Let's add the `"cars"` edge to the `User` schema, and run `go generate ./ent`:
 
@@ -269,8 +269,9 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		SetRegisteredAt(time.Now()).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating car: %v", err)
+		return nil, fmt.Errorf("failed creating car: %w", err)
 	}
+	log.Println("car was created: ", tesla)
 
 	// Create a new car with model "Ford".
 	ford, err := client.Car.
@@ -279,7 +280,7 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		SetRegisteredAt(time.Now()).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating car: %v", err)
+		return nil, fmt.Errorf("failed creating car: %w", err)
 	}
 	log.Println("car was created: ", ford)
 
@@ -291,7 +292,7 @@ func CreateCars(ctx context.Context, client *ent.Client) (*ent.User, error) {
 		AddCars(tesla, ford).
 		Save(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed creating user: %v", err)
+		return nil, fmt.Errorf("failed creating user: %w", err)
 	}
 	log.Println("user was created: ", a8m)
 	return a8m, nil
@@ -309,7 +310,7 @@ import (
 func QueryCars(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	log.Println("returned cars:", cars)
 
@@ -318,7 +319,7 @@ func QueryCars(ctx context.Context, a8m *ent.User) error {
 		Where(car.ModelEQ("Ford")).
 		Only(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	log.Println(ford)
 	return nil
@@ -330,7 +331,7 @@ Assume we have a `Car` object and we want to get its owner; the user that this c
 For this, we have another type of edge called "inverse edge" that is defined using the `edge.From`
 function.
 
-![er-cars-owner](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_cars_owner.png)
+![er-cars-owner](https://entgo.io/assets/re_cars_owner.png)
 
 The new edge created in the diagram above is translucent, to emphasize that we don't create another
 edge in the database. It's just a back-reference to the real edge (relation).
@@ -364,6 +365,7 @@ We'll continue the user/cars example above by querying the inverse edge.
 
 ```go
 import (
+	"fmt"
 	"log"
 
 	"<project>/ent"
@@ -372,13 +374,13 @@ import (
 func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 	cars, err := a8m.QueryCars().All(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying user cars: %v", err)
+		return fmt.Errorf("failed querying user cars: %w", err)
 	}
 	// Query the inverse edge.
 	for _, ca := range cars {
 		owner, err := ca.QueryOwner().Only(ctx)
 		if err != nil {
-			return fmt.Errorf("failed querying car %q owner: %v", ca.Model, err)
+			return fmt.Errorf("failed querying car %q owner: %w", ca.Model, err)
 		}
 		log.Printf("car %q owner: %q\n", ca.Model, owner.Name)
 	}
@@ -390,7 +392,7 @@ func QueryCarUsers(ctx context.Context, a8m *ent.User) error {
 
 We'll continue our example by creating a M2M (many-to-many) relationship between users and groups.
 
-![er-group-users](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_group_users.png)
+![er-group-users](https://entgo.io/assets/re_group_users.png)
 
 As you can see, each group entity can **have many** users, and a user can **be connected to many** groups;
 a simple "many-to-many" relationship. In the above illustration, the `Group` schema is the owner
@@ -447,7 +449,7 @@ go generate ./ent
 In order to run our first graph traversal, we need to generate some data (nodes and edges, or in other words, 
 entities and relations). Let's create the following graph using the framework:
 
-![re-graph](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/re_graph_getting_started.png)
+![re-graph](https://entgo.io/assets/re_graph_getting_started.png)
 
 
 ```go
@@ -540,7 +542,7 @@ Now when we have a graph with data, we can run a few queries on it:
 			QueryCars().                 // (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
 			All(ctx)
 		if err != nil {
-			return fmt.Errorf("failed getting cars: %v", err)
+			return fmt.Errorf("failed getting cars: %w", err)
 		}
 		log.Println("cars returned:", cars)
 		// Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Mazda, RegisteredAt=<Time>),)
@@ -578,7 +580,7 @@ Now when we have a graph with data, we can run a few queries on it:
 				). 								//
 				All(ctx)
 		if err != nil {
-			return fmt.Errorf("failed getting cars: %v", err)
+			return fmt.Errorf("failed getting cars: %w", err)
 		}
 		log.Println("cars returned:", cars)
 		// Output: (Car(Model=Tesla, RegisteredAt=<Time>), Car(Model=Ford, RegisteredAt=<Time>),)
@@ -602,7 +604,7 @@ Now when we have a graph with data, we can run a few queries on it:
     		Where(group.HasUsers()).
     		All(ctx)
     	if err != nil {
-    		return fmt.Errorf("failed getting groups: %v", err)
+    		return fmt.Errorf("failed getting groups: %w", err)
     	}
     	log.Println("groups returned:", groups)
     	// Output: (Group(Name=GitHub), Group(Name=GitLab),)
@@ -610,4 +612,4 @@ Now when we have a graph with data, we can run a few queries on it:
     }
     ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/start).
+The full example exists in [GitHub](https://github.com/ent/ent/tree/master/examples/start).

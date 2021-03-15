@@ -114,7 +114,7 @@ func Gen(ctx context.Context, client *ent.Client) error {
 		SetName("Github").
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("failed creating the group: %v", err)
+		return fmt.Errorf("failed creating the group: %w", err)
 	}
 	// Create the admin of the group.
 	// Unlike `Save`, `SaveX` panics if an error occurs.
@@ -184,7 +184,7 @@ func Traverse(ctx context.Context, client *ent.Client) error {
 		QueryOwner().                	// Coco's owner: Alex.
 		Only(ctx)                    	// Expect only one entity to return in the query.
 	if err != nil {
-		return fmt.Errorf("failed querying the owner: %v", err)
+		return fmt.Errorf("failed querying the owner: %w", err)
 	}
 	fmt.Println(owner)
 	// Output:
@@ -213,7 +213,7 @@ func Traverse(ctx context.Context, client *ent.Client) error {
 		).
 		All(ctx)
 	if err != nil {
-		return fmt.Errorf("failed querying the pets: %v", err)
+		return fmt.Errorf("failed querying the pets: %w", err)
 	}
 	fmt.Println(pets)
 	// Output:
@@ -222,7 +222,7 @@ func Traverse(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/traversal).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/traversal).
 
 
 ## Relationship
@@ -273,7 +273,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetName("Mashraki").
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating user: %v", err)
+		return fmt.Errorf("creating user: %w", err)
 	}
 	log.Println("user:", a8m)
 	card1, err := client.Card.
@@ -283,28 +283,28 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetExpired(time.Now().Add(time.Minute)).
 		Save(ctx)
 	if err != nil {
-    	return fmt.Errorf("creating card: %v", err)
-    }
+		return fmt.Errorf("creating card: %w", err)
+	}
 	log.Println("card:", card1)
 	// Only returns the card of the user,
 	// and expects that there's only one.
 	card2, err := a8m.QueryCard().Only(ctx)
 	if err != nil {
-		return fmt.Errorf("querying card: %v", err)
+		return fmt.Errorf("querying card: %w", err)
     }
 	log.Println("card:", card2)
 	// The Card entity is able to query its owner using
 	// its back-reference.
 	owner, err := card2.QueryOwner().Only(ctx)
 	if err != nil {
-		return fmt.Errorf("querying owner: %v", err)
+		return fmt.Errorf("querying owner: %w", err)
     }
 	log.Println("owner:", owner)
 	return nil
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/o2o2types).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/o2o2types).
 
 ## O2O Same Type
 
@@ -355,7 +355,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetValue(1).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating the head: %v", err)
+		return fmt.Errorf("creating the head: %w", err)
 	}
 	curr := head
 	// Generate the following linked-list: 1<->2<->3<->4<->5.
@@ -392,7 +392,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 	// Check that the change actually applied:
 	prev, err := head.QueryPrev().Only(ctx)
 	if err != nil {
-		return fmt.Errorf("getting head's prev: %v", err)
+		return fmt.Errorf("getting head's prev: %w", err)
 	}
 	fmt.Printf("\n%v", prev.Value == tail.Value)
 	// Output: true
@@ -400,7 +400,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/o2o2recur).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/o2o2recur).
 
 ## O2O Bidirectional
 
@@ -432,7 +432,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetName("a8m").
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating user: %v", err)
+		return fmt.Errorf("creating user: %w", err)
 	}
 	nati, err := client.User.
 		Create().
@@ -441,7 +441,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetSpouse(a8m).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating user: %v", err)
+		return fmt.Errorf("creating user: %w", err)
 	}
 
 	// Query the spouse edge.
@@ -474,7 +474,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/o2obidi).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/o2obidi).
 
 ## O2M Two Types
 
@@ -518,14 +518,14 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetName("pedro").
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating pet: %v", err)
+		return fmt.Errorf("creating pet: %w", err)
 	}
 	lola, err := client.Pet.
 		Create().
 		SetName("lola").
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating pet: %v", err)
+		return fmt.Errorf("creating pet: %w", err)
 	}
 	// Create the user, and add its pets on the creation.
 	a8m, err := client.User.
@@ -535,7 +535,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		AddPets(pedro, lola).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating user: %v", err)
+		return fmt.Errorf("creating user: %w", err)
 	}
 	fmt.Println("User created:", a8m)
 	// Output: User(id=1, age=30, name=a8m)
@@ -555,7 +555,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 	return nil
 }
 ```
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/o2m2types).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/o2m2types).
 
 ## O2M Same Type
 
@@ -605,7 +605,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		SetValue(2).
 		Save(ctx)
 	if err != nil {
-		return fmt.Errorf("creating the root: %v", err)
+		return fmt.Errorf("creating the root: %w", err)
 	}
 	// Add additional nodes to the tree:
 	//
@@ -664,7 +664,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/o2mrecur).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/o2mrecur).
 
 ## M2M Two Types
 
@@ -725,7 +725,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		QueryGroups().
 		All(ctx)
 	if err != nil {
-		return fmt.Errorf("querying a8m groups: %v", err)
+		return fmt.Errorf("querying a8m groups: %w", err)
 	}
 	fmt.Println(groups)
 	// Output: [Group(id=1, name=GitHub) Group(id=2, name=GitLab)]
@@ -734,7 +734,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		QueryGroups().
 		All(ctx)
 	if err != nil {
-		return fmt.Errorf("querying nati groups: %v", err)
+		return fmt.Errorf("querying nati groups: %w", err)
 	}
 	fmt.Println(groups)
 	// Output: [Group(id=1, name=GitHub)]
@@ -748,7 +748,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 		QueryUsers().                                            // [a8m, nati]
 		All(ctx)
 	if err != nil {
-		return fmt.Errorf("traversing the graph: %v", err)
+		return fmt.Errorf("traversing the graph: %w", err)
 	}
 	fmt.Println(users)
 	// Output: [User(id=1, age=30, name=a8m) User(id=2, age=28, name=nati)]
@@ -756,7 +756,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/m2m2types).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/m2m2types).
 
 ## M2M Same Type
 
@@ -849,7 +849,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/m2mrecur).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/m2mrecur).
 
 
 ## M2M Bidirectional
@@ -912,7 +912,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/m2mbidi).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/m2mbidi).
 
 ## Indexes
 
@@ -1020,5 +1020,5 @@ func Do(ctx context.Context, client *ent.Client) error {
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/edgeindex).
+The full example exists in [GitHub](https://github.com/facebook/ent/tree/master/examples/edgeindex).
 

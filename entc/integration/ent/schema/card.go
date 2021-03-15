@@ -21,7 +21,7 @@ type CardMixin struct {
 func (CardMixin) Annotations() []schema.Annotation {
 	return []schema.Annotation{
 		edge.Annotation{
-			StructTag: `json:"card_edges" mashraki:"edges"`,
+			StructTag: `mashraki:"edges"`,
 		},
 		field.Annotation{
 			StructTag: map[string]string{
@@ -57,6 +57,8 @@ func (Card) Annotations() []schema.Annotation {
 // Fields of the Comment.
 func (Card) Fields() []ent.Field {
 	return []ent.Field{
+		field.Float("balance").
+			Default(0),
 		field.String("number").
 			Immutable().
 			NotEmpty().

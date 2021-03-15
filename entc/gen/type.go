@@ -21,6 +21,7 @@ import (
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/dialect/sql/schema"
 	"entgo.io/ent/entc/load"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -79,12 +80,14 @@ type (
 		Validators int
 		// Position info of the field.
 		Position *load.Position
-		// UserDefined indicates that this field was defined by the loaded schema.
-		// Unlike default id field, which is defined by the generator.
+		// UserDefined indicates that this field was defined explicitly by the user in
+		// the schema. Unlike the default id field, which is defined by the generator.
 		UserDefined bool
 		// Annotations that were defined for the field in the schema.
 		// The mapping is from the Annotation.Name() to a JSON decoded object.
 		Annotations map[string]interface{}
+		// referenced foreign-key.
+		fk *ForeignKey
 	}
 
 	// Edge of a graph between two types.
@@ -100,6 +103,10 @@ type (
 		Unique bool
 		// Inverse holds the name of the reference edge declared in the schema.
 		Inverse string
+		// Ref points to the reference edge. For Inverse edges (edge.From),
+		// its points to the Assoc (edge.To). For Assoc edges, it points to
+		// the inverse edge if it exists.
+		Ref *Edge
 		// Owner holds the type of the edge-owner. For assoc-edges it's the
 		// type that holds the edge, for inverse-edges, it's the assoc type.
 		Owner *Type
@@ -131,6 +138,8 @@ type (
 		// Columns holds the relation column in the relation table above.
 		// In O2M, M2O and O2O, this the first element.
 		Columns []string
+		// foreign-key information for non-M2M edges.
+		fk *ForeignKey
 	}
 
 	// Index represents a database index used for either increasing speed
@@ -153,6 +162,17 @@ type (
 		Field *Field
 		// Edge that is associated with this foreign-key.
 		Edge *Edge
+		// UserDefined indicates that this foreign-key was defined explicitly as a field in the schema,
+		// and was referenced by an edge. For example:
+		//
+		//	field.Int("owner_id").
+		//		Optional()
+		//
+		//	edge.From("owner", User.Type).
+		//		Ref("pets").
+		//		Field("owner_id")
+		//
+		UserDefined bool
 	}
 	// Enum holds the enum information for schema enums in codegen.
 	Enum struct {
@@ -252,7 +272,7 @@ func (t Type) Receiver() string {
 	return receiver(t.Name)
 }
 
-// HasAssoc returns true if this type has an assoc-edge (non-inverse)
+// HasAssoc returns true if this type has an assoc-edge (edge.To)
 // with the given name. faster than map access for most cases.
 func (t Type) HasAssoc(name string) (*Edge, bool) {
 	for _, e := range t.Edges {
@@ -422,9 +442,9 @@ func (t Type) NumConstraint() int {
 	return n
 }
 
-// MutableFields returns the types's mutable fields.
+// MutableFields returns all type fields that are mutable (on update).
 func (t Type) MutableFields() []*Field {
-	var fields []*Field
+	fields := make([]*Field, 0, len(t.Fields))
 	for _, f := range t.Fields {
 		if !f.Immutable {
 			fields = append(fields, f)
@@ -433,7 +453,18 @@ func (t Type) MutableFields() []*Field {
 	return fields
 }
 
-// EnumFields returns the types's enum fields.
+// MutationFields returns all the fields that are available on the typed-mutation.
+func (t Type) MutationFields() []*Field {
+	fields := make([]*Field, 0, len(t.Fields))
+	for _, f := range t.Fields {
+		if !f.IsEdgeField() {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
+// EnumFields returns the enum fields of the schema, if any.
 func (t Type) EnumFields() []*Field {
 	var fields []*Field
 	for _, f := range t.Fields {
@@ -442,6 +473,19 @@ func (t Type) EnumFields() []*Field {
 		}
 	}
 	return fields
+}
+
+// FieldBy returns the first field that the given function returns true on it.
+func (t Type) FieldBy(fn func(*Field) bool) (*Field, bool) {
+	if fn(t.ID) {
+		return t.ID, true
+	}
+	for _, f := range t.Fields {
+		if fn(f) {
+			return f, true
+		}
+	}
+	return nil, false
 }
 
 // NumM2M returns the type's many-to-many edge count
@@ -502,22 +546,22 @@ func (t *Type) AddIndex(idx *load.Index) error {
 		index.Columns = append(index.Columns, f.StorageKey())
 	}
 	for _, name := range idx.Edges {
-		var edge *Edge
+		var ed *Edge
 		for _, e := range t.Edges {
 			if e.Name == name {
-				edge = e
+				ed = e
 				break
 			}
 		}
 		switch {
-		case edge == nil:
+		case ed == nil:
 			return fmt.Errorf("unknown index field %q", name)
-		case edge.Rel.Type == O2O && !edge.IsInverse():
+		case ed.Rel.Type == O2O && !ed.IsInverse():
 			return fmt.Errorf("non-inverse edge (edge.From) for index %q on O2O relation", name)
-		case edge.Rel.Type != M2O && edge.Rel.Type != O2O:
-			return fmt.Errorf("relation %s for inverse edge %q is not one of (O2O, M2O)", edge.Rel.Type, name)
+		case ed.Rel.Type != M2O && ed.Rel.Type != O2O:
+			return fmt.Errorf("relation %s for inverse edge %q is not one of (O2O, M2O)", ed.Rel.Type, name)
 		default:
-			index.Columns = append(index.Columns, edge.Rel.Column())
+			index.Columns = append(index.Columns, ed.Rel.Column())
 		}
 	}
 	// If no storage-key was defined for this index, generate one.
@@ -531,18 +575,21 @@ func (t *Type) AddIndex(idx *load.Index) error {
 	return nil
 }
 
-// resolveFKs makes sure all edge-fks are created for the types.
-func (t *Type) resolveFKs() error {
+// setupFKs makes sure all edge-fks are created for the edges.
+func (t *Type) setupFKs() error {
 	for _, e := range t.Edges {
 		if err := e.setStorageKey(); err != nil {
-			return fmt.Errorf("%q edge: %v", e.Name, err)
+			return fmt.Errorf("%q edge: %w", e.Name, err)
+		}
+		if ef := e.def.Field; ef != "" && !e.OwnFK() {
+			return fmt.Errorf("edge %q has a field %q but it is not holding a foreign key", e.Name, ef)
 		}
 		if e.IsInverse() || e.M2M() {
 			continue
 		}
-		refid := t.ID
-		if e.OwnFK() {
-			refid = e.Type.ID
+		owner, refid := t, e.Type.ID
+		if !e.OwnFK() {
+			owner, refid = e.Type, t.ID
 		}
 		fk := &ForeignKey{
 			Edge: e,
@@ -555,16 +602,65 @@ func (t *Type) resolveFKs() error {
 				UserDefined: refid.UserDefined,
 			},
 		}
-		if e.OwnFK() {
-			t.addFK(fk)
-		} else {
-			e.Type.addFK(fk)
+		// Update the foreign-key/edge-field info of the assoc-edge.
+		e.Rel.fk = fk
+		if edgeField := e.def.Field; edgeField != "" {
+			if err := owner.setupFieldEdge(fk, e, edgeField); err != nil {
+				return err
+			}
 		}
+		// Update inverse-edge info as well (optional).
+		if ref := e.Ref; ref != nil {
+			ref.Rel.fk = fk
+			if edgeField := e.Ref.def.Field; edgeField != "" {
+				if err := owner.setupFieldEdge(fk, e.Ref, edgeField); err != nil {
+					return err
+				}
+			}
+		}
+		// Special case for checking if the FK is already defined as the ID field (see issue 1288).
+		if key, _ := e.StorageKey(); key != nil && len(key.Columns) == 1 && key.Columns[0] == refid.StorageKey() {
+			fk.Field = refid
+			fk.UserDefined = true
+		}
+		owner.addFK(fk)
 	}
 	return nil
 }
 
-// AddForeignKey adds a foreign-key for the type if it doesn't exist.
+// setupEdgeField check the field-edge validity and configures it and its foreign-key.
+func (t *Type) setupFieldEdge(fk *ForeignKey, fkOwner *Edge, fkName string) error {
+	tf, ok := t.fields[fkName]
+	if !ok {
+		return fmt.Errorf("field %q was not found in the schema for edge %q", fkName, fkOwner.Name)
+	}
+	if tf.Optional != fkOwner.Optional {
+		return fmt.Errorf("mismatch optional/required config for edge %q and field %q", fkOwner.Name, fkName)
+	}
+	if t1, t2 := tf.Type.Type, fkOwner.Type.ID.Type.Type; t1 != t2 {
+		return fmt.Errorf("mismatch field type between edge field %q and id of type %q (%s != %s)", fkName, fkOwner.Type.Name, t1, t2)
+	}
+	fk.UserDefined = true
+	tf.fk, fk.Field = fk, tf
+	ekey, err := fkOwner.StorageKey()
+	if err != nil {
+		return err
+	}
+	if ekey != nil && len(ekey.Columns) == 1 {
+		if fkey := tf.def.StorageKey; fkey != "" && fkey != ekey.Columns[0] {
+			return fmt.Errorf("mismatch storage-key for edge %q and field %q", fkOwner.Name, fkName)
+		}
+		// Update the field storage key.
+		tf.def.StorageKey = ekey.Columns[0]
+	}
+	fkOwner.Rel.Columns = []string{tf.StorageKey()}
+	if ref := fkOwner.Ref; ref != nil {
+		ref.Rel.Columns = []string{tf.StorageKey()}
+	}
+	return nil
+}
+
+// addFK adds a foreign-key for the type if it doesn't exist.
 func (t *Type) addFK(fk *ForeignKey) {
 	if _, ok := t.foreignKeys[fk.Field.Name]; ok {
 		return
@@ -683,13 +779,16 @@ func (t Type) RelatedTypes() []*Type {
 // ValidSchemaName will determine if a name is going to conflict with any
 // pre-defined names
 func ValidSchemaName(name string) error {
-	// schema package is lower-cased (see Type.Package)
+	// Schema package is lower-cased (see Type.Package).
 	pkg := strings.ToLower(name)
 	if token.Lookup(pkg).IsKeyword() {
 		return fmt.Errorf("schema lowercase name conflicts with Go keyword %q", pkg)
 	}
 	if types.Universe.Lookup(pkg) != nil {
 		return fmt.Errorf("schema lowercase name conflicts with Go predeclared identifier %q", pkg)
+	}
+	if _, ok := globalIdent[pkg]; ok {
+		return fmt.Errorf("schema lowercase name conflicts ent predeclared identifier %q", pkg)
 	}
 	if _, ok := globalIdent[name]; ok {
 		return fmt.Errorf("schema name conflicts with ent predeclared identifier %q", name)
@@ -706,7 +805,7 @@ func (t *Type) checkField(tf *Field, f *load.Field) (err error) {
 		err = fmt.Errorf("invalid type for field %s", f.Name)
 	case f.Nillable && !f.Optional:
 		err = fmt.Errorf("nillable field %q must be optional", f.Name)
-	case f.Unique && f.Default && f.Info.Type != field.TypeUUID:
+	case f.Unique && f.Default && f.DefaultKind != reflect.Func:
 		err = fmt.Errorf("unique field %q cannot have default value", f.Name)
 	case t.fields[f.Name] != nil:
 		err = fmt.Errorf("field %q redeclared for type %q", f.Name, t.Name)
@@ -721,6 +820,18 @@ func (t *Type) checkField(tf *Field, f *load.Field) (err error) {
 		err = fmt.Errorf("GoType %q for field %q must be converted to the basic %q type for validators", tf.Type, f.Name, tf.Type.Type)
 	}
 	return err
+}
+
+// UnexportedForeignKeys returns all foreign-keys that belong to the type
+// but are not exported (not defined with field). i.e. generated by ent.
+func (t Type) UnexportedForeignKeys() []*ForeignKey {
+	fks := make([]*ForeignKey, 0, len(t.ForeignKeys))
+	for _, fk := range t.ForeignKeys {
+		if !fk.UserDefined {
+			fks = append(fks, fk)
+		}
+	}
+	return fks
 }
 
 // Constant returns the constant name of the field.
@@ -742,6 +853,13 @@ func (f Field) DefaultFunc() interface{} { return f.def.DefaultKind == reflect.F
 
 // BuilderField returns the struct member of the field in the builder.
 func (f Field) BuilderField() string {
+	if f.IsEdgeField() {
+		e, err := f.Edge()
+		if err != nil {
+			panic(err)
+		}
+		return e.BuilderField()
+	}
 	return builderField(f.Name)
 }
 
@@ -861,6 +979,24 @@ func (f Field) IsInt() bool { return f.Type != nil && f.Type.Type == field.TypeI
 
 // IsEnum returns true if the field is an enum field.
 func (f Field) IsEnum() bool { return f.Type != nil && f.Type.Type == field.TypeEnum }
+
+// IsAddable returns true if the field is an enum field.
+func (f Field) IsAddable() bool { return f.Type != nil && f.Type.Type == field.TypeEnum }
+
+// IsEdgeField reports if the given field is an edge-field (i.e. a foreign-key)
+// that was referenced by one of the edges).
+func (f Field) IsEdgeField() bool { return f.fk != nil }
+
+// Edge returns the edge this field is point to.
+func (f Field) Edge() (*Edge, error) {
+	if !f.IsEdgeField() {
+		return nil, fmt.Errorf("field %q is not an edge-field (missing foreign-key)", f.Name)
+	}
+	if e := f.fk.Edge; e.OwnFK() {
+		return e, nil
+	}
+	return f.fk.Edge.Ref, nil
+}
 
 // Sensitive returns true if the field is a sensitive field.
 func (f Field) Sensitive() bool { return f.def != nil && f.def.Sensitive }
@@ -1173,12 +1309,6 @@ func (e Edge) StructField() string {
 	return pascal(e.Name)
 }
 
-// StructFKField returns the struct member for holding the edge
-// foreign-key in the model.
-func (e Edge) StructFKField() string {
-	return builderField(e.Rel.Column())
-}
-
 // OwnFK indicates if the foreign-key of this edge is owned by the edge
 // column (reside in the type's table). Used by the SQL storage-driver.
 func (e Edge) OwnFK() bool {
@@ -1189,6 +1319,38 @@ func (e Edge) OwnFK() bool {
 		return true
 	}
 	return false
+}
+
+// ForeignKey returns the foreign-key of the inverse-field.
+func (e *Edge) ForeignKey() (*ForeignKey, error) {
+	if e.Rel.fk != nil {
+		return e.Rel.fk, nil
+	}
+	return nil, fmt.Errorf("foreign-key was not found for edge %q of type %s", e.Name, e.Rel.Type)
+}
+
+// Field returns the field that was referenced in the schema. For example:
+//
+//	edge.From("owner", User.Type).
+//		Ref("pets").
+//		Field("owner_id")
+//
+// Note that the zero value is returned if no field was defined in the schema.
+func (e Edge) Field() *Field {
+	if fk, err := e.ForeignKey(); err == nil {
+		return fk.Field
+	}
+	return nil
+}
+
+// HasFieldSetter reports if this edge already has a field-edge setters for its mutation API.
+// It's used by the codegen templates to avoid generating duplicate setters for id APIs (e.g. SetOwnerID).
+func (e Edge) HasFieldSetter() bool {
+	fk, err := e.ForeignKey()
+	if err != nil {
+		return false
+	}
+	return fk.UserDefined && fk.Field.MutationSet() == e.MutationSet()
 }
 
 // MutationSet returns the method name for setting the edge id.
@@ -1237,18 +1399,11 @@ func (e Edge) MutationCleared() string {
 
 // setStorageKey sets the storage-key option in the schema or fail.
 func (e *Edge) setStorageKey() error {
-	rel := e.Rel
-	key := e.def.StorageKey
-	if e.IsInverse() {
-		assoc, ok := e.Owner.HasAssoc(e.Inverse)
-		if ok {
-			key = assoc.def.StorageKey
-		}
+	key, err := e.StorageKey()
+	if err != nil || key == nil {
+		return err
 	}
-	if key == nil {
-		return nil
-	}
-	switch {
+	switch rel := e.Rel; {
 	case key.Table != "" && rel.Type != M2M:
 		return fmt.Errorf("StorageKey.Table is allowed only for M2M edges (got %s)", e.Rel.Type)
 	case len(key.Columns) == 1 && rel.Type == M2M:
@@ -1268,12 +1423,37 @@ func (e *Edge) setStorageKey() error {
 	return nil
 }
 
+// StorageKey returns the storage-key defined on the schema if exists.
+func (e Edge) StorageKey() (*edge.StorageKey, error) {
+	key := e.def.StorageKey
+	if !e.IsInverse() {
+		return key, nil
+	}
+	assoc, ok := e.Owner.HasAssoc(e.Inverse)
+	if !ok || assoc.def.StorageKey == nil {
+		return key, nil
+	}
+	// Assoc/To edge found with storage-key configured.
+	if key != nil {
+		return nil, fmt.Errorf("multiple storage-keys defined for edge %q<->%q", e.Name, assoc.Name)
+	}
+	return assoc.def.StorageKey, nil
+}
+
 // Column returns the first element from the columns slice.
 func (r Relation) Column() string {
 	if len(r.Columns) == 0 {
 		panic(fmt.Sprintf("missing column for Relation.Table: %s", r.Table))
 	}
 	return r.Columns[0]
+}
+
+// StructField returns the struct member of the foreign-key in the generated model.
+func (f ForeignKey) StructField() string {
+	if f.UserDefined {
+		return f.Field.StructField()
+	}
+	return f.Field.Name
 }
 
 // Rel is a relation type of an edge.
@@ -1345,6 +1525,7 @@ var (
 		"As",
 		"Asc",
 		"Client",
+		"config",
 		"Count",
 		"Debug",
 		"Desc",
@@ -1380,7 +1561,6 @@ var (
 		"predicates",
 		"typ",
 		"unique",
-		"withFKs",
 	)
 )
 

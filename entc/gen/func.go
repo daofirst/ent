@@ -45,6 +45,7 @@ var (
 		"base":          filepath.Base,
 		"keys":          keys,
 		"join":          join,
+		"isNil":         isNil,
 		"lower":         strings.ToLower,
 		"upper":         strings.ToUpper,
 		"hasField":      hasField,
@@ -81,7 +82,7 @@ func ops(f *Field) (op []Op) {
 		op = boolOps
 	case t == field.TypeString && strings.ToLower(f.Name) != "id":
 		op = stringOps
-	case t == field.TypeEnum:
+	case t == field.TypeEnum || f.IsEdgeField():
 		op = enumOps
 	default:
 		op = numericOps
@@ -374,6 +375,22 @@ func hasImport(name string) bool {
 // trimPackage trims the package name from the given identifier.
 func trimPackage(ident, pkg string) string {
 	return strings.TrimPrefix(ident, pkg+".")
+}
+
+// isNil reports whether its argument v is nil.
+func isNil(v interface{}) bool {
+	rv := indirect(reflect.ValueOf(v))
+	if !rv.IsValid() {
+		return true
+	}
+	switch rv.Kind() {
+	case reflect.Invalid:
+		return true
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.UnsafePointer, reflect.Interface, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
 }
 
 // indirect returns the item at the end of indirection.

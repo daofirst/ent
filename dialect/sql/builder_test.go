@@ -1372,6 +1372,29 @@ WHERE
 			wantQuery: "SELECT * FROM `users` JOIN `pets` AS `t0` ON `users`.`id` = `t0`.`owner_id` WHERE `t0`.`name` = ?",
 			wantArgs:  []interface{}{"pedro"},
 		},
+		{
+			input: Dialect(dialect.Postgres).
+				Select("*").
+				From(Table("users")).
+				Where(ExprP("name = $1", "pedro")).
+				Where(P(func(b *Builder) {
+					b.Join(Expr("name = $2", "pedro"))
+				})).
+				Where(EQ("name", "pedro")).
+				Where(
+					And(
+						In(
+							"id",
+							Select("owner_id").
+								From(Table("pets")).
+								Where(EQ("name", "luna")),
+						),
+						EQ("active", true),
+					),
+				),
+			wantQuery: `SELECT * FROM "users" WHERE ((name = $1 AND name = $2) AND "name" = $3) AND ("id" IN (SELECT "owner_id" FROM "pets" WHERE "name" = $4) AND "active" = $5)`,
+			wantArgs:  []interface{}{"pedro", "pedro", "pedro", "luna", true},
+		},
 	}
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -1413,4 +1436,25 @@ func TestBuilderContext(t *testing.T) {
 	if got := sel.Clone().Context().Value(key("mykey")).(string); got != want {
 		t.Fatalf("expected cloned selector context key to be %q but got %q", want, got)
 	}
+}
+
+type point struct {
+	xy []float64
+	*testing.T
+}
+
+func (p point) FormatParam(placeholder string, info *StmtInfo) string {
+	require.Equal(p.T, dialect.MySQL, info.Dialect)
+	return "ST_GeomFromWKB(" + placeholder + ")"
+}
+
+func TestParamFormatter(t *testing.T) {
+	p := point{xy: []float64{1, 2}, T: t}
+	query, args := Dialect(dialect.MySQL).
+		Select().
+		From(Table("users")).
+		Where(EQ("point", p)).
+		Query()
+	require.Equal(t, "SELECT * FROM `users` WHERE `point` = ST_GeomFromWKB(?)", query)
+	require.Equal(t, p, args[0])
 }

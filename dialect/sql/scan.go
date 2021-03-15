@@ -25,7 +25,7 @@ type ColumnScanner interface {
 func ScanOne(rows ColumnScanner, v interface{}) error {
 	columns, err := rows.Columns()
 	if err != nil {
-		return fmt.Errorf("sql/scan: failed getting column names: %v", err)
+		return fmt.Errorf("sql/scan: failed getting column names: %w", err)
 	}
 	if n := len(columns); n != 1 {
 		return fmt.Errorf("sql/scan: unexpected number of columns: %d", n)
@@ -85,7 +85,7 @@ func ScanValue(rows ColumnScanner) (driver.Value, error) {
 func ScanSlice(rows ColumnScanner, v interface{}) error {
 	columns, err := rows.Columns()
 	if err != nil {
-		return fmt.Errorf("sql/scan: failed getting column names: %v", err)
+		return fmt.Errorf("sql/scan: failed getting column names: %w", err)
 	}
 	rv := reflect.ValueOf(v)
 	switch {
@@ -111,7 +111,7 @@ func ScanSlice(rows ColumnScanner, v interface{}) error {
 	for rows.Next() {
 		values := scan.values()
 		if err := rows.Scan(values...); err != nil {
-			return fmt.Errorf("sql/scan: failed scanning rows: %v", err)
+			return fmt.Errorf("sql/scan: failed scanning rows: %w", err)
 		}
 		vv := reflect.Append(rv, scan.value(values...))
 		rv.Set(vv)
@@ -174,8 +174,8 @@ func assignable(typ reflect.Type) bool {
 func scanStruct(typ reflect.Type, columns []string) (*rowScan, error) {
 	var (
 		scan  = &rowScan{}
-		names = make(map[string]int)
 		idx   = make([]int, 0, typ.NumField())
+		names = make(map[string]int, typ.NumField())
 	)
 	for i := 0; i < typ.NumField(); i++ {
 		f := typ.Field(i)
@@ -192,7 +192,7 @@ func scanStruct(typ reflect.Type, columns []string) (*rowScan, error) {
 		names[name] = i
 	}
 	for _, c := range columns {
-		// normalize columns if necessary, for example: COUNT(*) => count.
+		// Normalize columns if necessary, for example: COUNT(*) => count.
 		name := strings.ToLower(strings.Split(c, "(")[0])
 		i, ok := names[name]
 		if !ok {

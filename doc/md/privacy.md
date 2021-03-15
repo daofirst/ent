@@ -5,7 +5,7 @@ title: Privacy
 
 The `Policy` option in the schema allows configuring privacy policy for queries and mutations of entities in the database.
 
-![gopher-privacy](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/gopher-privacy-opacity.png)
+![gopher-privacy](https://entgo.io/assets/gopher-privacy-opacity.png)
 
 The main advantage of the privacy layer is that, you write the privacy policy **once** (in the schema), and it is **always**
 evaluated. No matter where queries and mutations are performed in your codebase, it will always go through the privacy layer.
@@ -24,12 +24,12 @@ in the same order they are declared in the schema.
 If all rules are evaluated without returning an error, the evaluation finishes successfully, and the executed operation 
 gets access to the target nodes.
 
-![privacy-rules](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_1.png)
+![privacy-rules](https://entgo.io/assets/permission_1.png)
 
 However, if one of the evaluated rules returns an error or a `privacy.Deny` decision (see below), the executed operation
 returns an error, and it is cancelled. 
 
-![privacy-deny](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_2.png)
+![privacy-deny](https://entgo.io/assets/permission_2.png)
 
 ### Privacy Rules
 
@@ -55,7 +55,7 @@ There are three types of decision that can help you control the privacy rules ev
   
 - `privacy.Skip` - Skip the current rule, and jump to the next privacy rule. This equivalent to returning a `nil` error.
 
-![privacy-allow](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/permission_3.png)
+![privacy-allow](https://entgo.io/assets/permission_3.png)
 
 Now, that we’ve covered the basic terms, let’s start writing some code.
 
@@ -68,7 +68,7 @@ In order to enable the privacy option in your code generation, enable the `priva
 ```go
 package ent
   
-//go:generate go run entgo.io/ent/cmd/ent generate --feature privacy ./schema
+//go:generate go run -mod=mod entgo.io/ent/cmd/ent generate --feature privacy ./schema
 ```
 
 It is recommended to add the [`schema/snapshot`](features.md#auto-solve-merge-conflicts) feature-flag along with the
@@ -91,7 +91,7 @@ import (
 
     "entgo.io/ent/entc"
     "entgo.io/ent/entc/gen"
-    "entgo.ioincubator/ent-contrib/entgql"
+    "entgo.io/contrib/entgql"
 )
 
 func main() {
@@ -107,8 +107,9 @@ func main() {
 }
 ```
 
-> You should notice that, similar to schema hooks, if you use the **`Policy`** option in your schema,
-> you **MUST** add the following import in the main package, because a circular import is possible:
+> You should notice that, similar to [schema hooks](hooks.md#hooks-registration), if you use the **`Policy`** option in your schema,
+> you **MUST** add the following import in the main package, because a circular import is possible between the schema package,
+> and the generated ent package:
 >
 > ```go
 > import _ "<project>/ent/runtime"
@@ -124,8 +125,7 @@ with admin role. We will create 2 additional packages for the purpose of the exa
 - `rule` - for holding the different privacy rules in our schema.
 - `viewer` - for getting and setting the user/viewer who's executing the operation. In this simple example, it can be
    either a normal user or an admin.
-    
-<br/>
+
 After running the code-generation (with the feature-flag for privacy), we add the `Policy` method with 2 generated policy rules.
 
 ```go
@@ -226,17 +226,17 @@ func Do(ctx context.Context, client *ent.Client) error {
 	// Expect operation to fail, because viewer-context
 	// is missing (first mutation rule check).
 	if _, err := client.User.Create().Save(ctx); !errors.Is(err, privacy.Deny) {
-		return fmt.Errorf("expect operation to fail, but got %v", err)
+		return fmt.Errorf("expect operation to fail, but got %w", err)
 	}
 	// Apply the same operation with "Admin" role.
 	admin := viewer.NewContext(ctx, viewer.UserViewer{Role: viewer.Admin})
 	if _, err := client.User.Create().Save(admin); err != nil {
-		return fmt.Errorf("expect operation to pass, but got %v", err)
+		return fmt.Errorf("expect operation to pass, but got %w", err)
 	}
 	// Apply the same operation with "ViewOnly" role.
 	viewOnly := viewer.NewContext(ctx, viewer.UserViewer{Role: viewer.View})
 	if _, err := client.User.Create().Save(viewOnly); !errors.Is(err, privacy.Deny) {
-		return fmt.Errorf("expect operation to fail, but got %v", err)
+		return fmt.Errorf("expect operation to fail, but got %w", err)
 	}
 	// Allow all viewers to query users.
 	for _, ctx := range []context.Context{ctx, viewOnly, admin} {
@@ -258,22 +258,22 @@ func Do(ctx context.Context, client *ent.Client) error {
 	// Bind a privacy decision to the context (bypass all other rules).
 	allow := privacy.DecisionContext(ctx, privacy.Allow)
 	if _, err := client.User.Create().Save(allow); err != nil {
-		return fmt.Errorf("expect operation to pass, but got %v", err)
+		return fmt.Errorf("expect operation to pass, but got %w", err)
 	}
     return nil
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/privacyadmin).
+The full example exists in [GitHub](https://github.com/ent/ent/tree/master/examples/privacyadmin).
 
 ### Multi Tenancy
 
 In this example, we're going to create a schema with 3 entity types - `Tenant`, `User` and `Group`.
 The helper packages `viewer` and `rule` (as mentioned above) also exist in this example to help us structure the application.
 
-![tenant-example](https://s3.eu-central-1.amazonaws.com/entgo.io/assets/tenant_medium.png)
+![tenant-example](https://entgo.io/assets/tenant_medium.png)
 
-Let's start building this application piece by piece. We begin by creating 3 different schemas (see the full code [here](https://entgo.io/ent/tree/master/examples/privacytenant/ent/schema)),
+Let's start building this application piece by piece. We begin by creating 3 different schemas (see the full code [here](https://github.com/ent/ent/tree/master/examples/privacytenant/ent/schema)),
 and since we want to share some logic between them, we create another [mixed-in schema](schema-mixin.md) and add it to all other schemas as follows:
 
 ```go
@@ -329,23 +329,23 @@ func Do(ctx context.Context, client *ent.Client) error {
 	// Expect operation to fail, because viewer-context
 	// is missing (first mutation rule check).
 	if _, err := client.Tenant.Create().Save(ctx); !errors.Is(err, privacy.Deny) {
-		return fmt.Errorf("expect operation to fail, but got %v", err)
+		return fmt.Errorf("expect operation to fail, but got %w", err)
 	}
 	// Deny tenant creation if the viewer is not admin.
 	viewOnly := viewer.NewContext(ctx, viewer.UserViewer{Role: viewer.View})
 	if _, err := client.Tenant.Create().Save(viewOnly); !errors.Is(err, privacy.Deny) {
-		return fmt.Errorf("expect operation to fail, but got %v", err)
+		return fmt.Errorf("expect operation to fail, but got %w", err)
 	}
 	// Apply the same operation with "Admin" role.
 	admin := viewer.NewContext(ctx, viewer.UserViewer{Role: viewer.Admin})
 	hub, err := client.Tenant.Create().SetName("GitHub").Save(admin)
 	if err != nil {
-		return fmt.Errorf("expect operation to pass, but got %v", err)
+		return fmt.Errorf("expect operation to pass, but got %w", err)
 	}
 	fmt.Println(hub)
 	lab, err := client.Tenant.Create().SetName("GitLab").Save(admin)
 	if err != nil {
-		return fmt.Errorf("expect operation to pass, but got %v", err)
+		return fmt.Errorf("expect operation to pass, but got %w", err)
 	}
 	fmt.Println(lab)
     return nil
@@ -469,7 +469,7 @@ func DenyMismatchedTenants() privacy.MutationRule {
 		// and it matches the tenant-id of the group above.
 		uid, err := m.Client().User.Query().Where(user.IDIn(users...)).QueryTenant().OnlyID(ctx)
 		if err != nil {
-			return privacy.Denyf("querying the tenant-id %v", err)
+			return privacy.Denyf("querying the tenant-id %w", err)
 		}
 		if uid != tid {
 			return privacy.Denyf("mismatch tenant-ids for group/users %d != %d", tid, uid)
@@ -513,7 +513,7 @@ func Do(ctx context.Context, client *ent.Client) error {
 	}
 	entgo, err := client.Group.Create().SetName("entgo.io").SetTenant(hub).AddUsers(a8m).Save(admin)
 	if err != nil {
-		return fmt.Errorf("expect operation to pass, but got %v", err)
+		return fmt.Errorf("expect operation to pass, but got %w", err)
 	}
 	fmt.Println(entgo)
 	return nil
@@ -555,13 +555,13 @@ func Do(ctx context.Context, client *ent.Client) error {
     }
     entgo, err = entgo.Update().SetName("entgo").Save(hubView)
     if err != nil {
-    	return fmt.Errorf("expect operation to pass, but got %v", err)
+    	return fmt.Errorf("expect operation to pass, but got %w", err)
     }
     fmt.Println(entgo)
     return nil
 }
 ```
 
-The full example exists in [GitHub](https://entgo.io/ent/tree/master/examples/privacytenant).
+The full example exists in [GitHub](https://github.com/ent/ent/tree/master/examples/privacytenant).
 
 Please note that this documentation is under active development.
