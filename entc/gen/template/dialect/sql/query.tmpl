@@ -4,10 +4,17 @@ This source code is licensed under the Apache 2.0 license found
 in the LICENSE file in the root directory of this source tree.
 */}}
 
+{{/* gotype: entgo.io/ent/entc/gen.typeScope */}}
+
 {{/* Additional fields for the builder. */}}
 {{ define "dialect/sql/query/fields" }}
 	{{- with $.UnexportedForeignKeys }}
 		withFKs bool
+	{{- end }}
+	{{- with $tmpls := matchTemplate "dialect/sql/query/fields/additional/*" }}
+		{{- range $tmpl := $tmpls }}
+			{{ xtemplate $tmpl $ }}
+		{{- end }}
 	{{- end }}
 {{- end }}
 
@@ -78,6 +85,12 @@ func ({{ $receiver }} *{{ $builder }}) sqlAll(ctx context.Context) ([]*{{ $.Name
 
 func ({{ $receiver }} *{{ $builder }}) sqlCount(ctx context.Context) (int, error) {
 	_spec := {{ $receiver }}.querySpec()
+	{{- /* Allow mutating the sqlgraph.QuerySpec by ent extensions or user templates.*/}}
+	{{- with $tmpls := matchTemplate "dialect/sql/query/spec/*" }}
+		{{- range $tmpl := $tmpls }}
+			{{- xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
 	return sqlgraph.CountNodes(ctx, {{ $receiver }}.driver, _spec)
 }
 
@@ -101,6 +114,9 @@ func ({{ $receiver }} *{{ $builder }}) querySpec() *sqlgraph.QuerySpec {
 		},
 		From: {{ $receiver }}.sql,
 		Unique: true,
+	}
+	if unique := {{ $receiver }}.unique; unique != nil {
+		_spec.Unique = *unique
 	}
 	if fields := {{ $receiver }}.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
@@ -127,7 +143,7 @@ func ({{ $receiver }} *{{ $builder }}) querySpec() *sqlgraph.QuerySpec {
 	if ps := {{ $receiver }}.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, {{ $.Package }}.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -168,7 +184,7 @@ func ({{ $receiver }} *{{ $builder }}) sqlQuery(ctx context.Context) *sql.Select
 		p(selector)
 	}
 	for _, p := range {{ $receiver }}.order {
-		p(selector, {{ $.Package }}.ValidColumn)
+		p(selector)
 	}
 	if offset := {{ $receiver }}.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -264,8 +280,8 @@ func ({{ $receiver }} *{{ $builder }}) sqlQuery(ctx context.Context) *sql.Select
 				Predicate: func(s *sql.Selector) {
 					s.Where(sql.InValues({{ $.Package }}.{{ $e.PKConstant }}[{{ if $e.IsInverse }}1{{ else }}0{{ end }}], fks...))
 				},
-				{{ $out := "sql.NullInt64" }}{{ if $.ID.UserDefined }}{{ $out = $.ID.NullType }}{{ end }}
-				{{ $in := "sql.NullInt64" }}{{ if $e.Type.ID.UserDefined }}{{ $in = $e.Type.ID.NullType }}{{ end }}
+				{{- $out := "sql.NullInt64" }}{{ if $.ID.UserDefined }}{{ $out = $.ID.NullType }}{{ end }}
+				{{- $in := "sql.NullInt64" }}{{ if $e.Type.ID.UserDefined }}{{ $in = $e.Type.ID.NullType }}{{ end }}
 				ScanValues: func() [2]interface{}{
 					return [2]interface{}{&{{ $out }}{}, &{{ $in }}{}}
 				},
@@ -284,7 +300,9 @@ func ({{ $receiver }} *{{ $builder }}) sqlQuery(ctx context.Context) *sql.Select
 					if !ok {
 						return fmt.Errorf("unexpected node id in edges: %v", outValue)
 					}
-					edgeids = append(edgeids, inValue)
+					if _, ok := edges[inValue]; !ok {
+						edgeids = append(edgeids, inValue)
+					}
 					edges[inValue] = append(edges[inValue], node)
 					return nil
 				},
@@ -317,16 +335,16 @@ func ({{ $receiver }} *{{ $builder }}) sqlQuery(ctx context.Context) *sql.Select
 			nodeids := make(map[{{ $e.Type.ID.Type }}][]*{{ $.Name }})
 			for i := range nodes {
 				{{- $fk := $e.ForeignKey }}
-				fk := nodes[i].{{ $fk.StructField }}
 				{{- if $fk.Field.Nillable }}
-					if fk != nil {
-						ids = append(ids, *fk)
-						nodeids[*fk] = append(nodeids[*fk], nodes[i])
+					if nodes[i].{{ $fk.StructField }} == nil {
+						continue
 					}
-				{{- else }}
-					ids = append(ids, fk)
-					nodeids[fk] = append(nodeids[fk], nodes[i])
 				{{- end }}
+				fk := {{ if $fk.Field.Nillable }}*{{ end }}nodes[i].{{ $fk.StructField }}
+				if _, ok := nodeids[fk]; !ok {
+					ids = append(ids, fk)
+				}
+				nodeids[fk] = append(nodeids[fk], nodes[i])
 			}
 			query.Where({{ $e.Type.Package }}.IDIn(ids...))
 			neighbors, err := query.All(ctx)

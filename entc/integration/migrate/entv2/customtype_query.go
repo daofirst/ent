@@ -24,6 +24,7 @@ type CustomTypeQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.CustomType
@@ -47,6 +48,13 @@ func (ctq *CustomTypeQuery) Limit(limit int) *CustomTypeQuery {
 // Offset adds an offset step to the query.
 func (ctq *CustomTypeQuery) Offset(offset int) *CustomTypeQuery {
 	ctq.offset = &offset
+	return ctq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (ctq *CustomTypeQuery) Unique(unique bool) *CustomTypeQuery {
+	ctq.unique = &unique
 	return ctq
 }
 
@@ -356,6 +364,9 @@ func (ctq *CustomTypeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   ctq.sql,
 		Unique: true,
 	}
+	if unique := ctq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := ctq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, customtype.FieldID)
@@ -381,7 +392,7 @@ func (ctq *CustomTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := ctq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, customtype.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -400,7 +411,7 @@ func (ctq *CustomTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range ctq.order {
-		p(selector, customtype.ValidColumn)
+		p(selector)
 	}
 	if offset := ctq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -666,7 +677,7 @@ func (ctgb *CustomTypeGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ctgb.fields)+len(ctgb.fns))
 	columns = append(columns, ctgb.fields...)
 	for _, fn := range ctgb.fns {
-		columns = append(columns, fn(selector, customtype.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(ctgb.fields...)
 }

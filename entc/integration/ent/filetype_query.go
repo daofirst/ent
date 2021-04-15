@@ -26,6 +26,7 @@ type FileTypeQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.FileType
@@ -51,6 +52,13 @@ func (ftq *FileTypeQuery) Limit(limit int) *FileTypeQuery {
 // Offset adds an offset step to the query.
 func (ftq *FileTypeQuery) Offset(offset int) *FileTypeQuery {
 	ftq.offset = &offset
+	return ftq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (ftq *FileTypeQuery) Unique(unique bool) *FileTypeQuery {
+	ftq.unique = &unique
 	return ftq
 }
 
@@ -428,6 +436,9 @@ func (ftq *FileTypeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   ftq.sql,
 		Unique: true,
 	}
+	if unique := ftq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := ftq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, filetype.FieldID)
@@ -453,7 +464,7 @@ func (ftq *FileTypeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := ftq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, filetype.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -472,7 +483,7 @@ func (ftq *FileTypeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range ftq.order {
-		p(selector, filetype.ValidColumn)
+		p(selector)
 	}
 	if offset := ftq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -738,7 +749,7 @@ func (ftgb *FileTypeGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ftgb.fields)+len(ftgb.fns))
 	columns = append(columns, ftgb.fields...)
 	for _, fn := range ftgb.fns {
-		columns = append(columns, fn(selector, filetype.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(ftgb.fields...)
 }

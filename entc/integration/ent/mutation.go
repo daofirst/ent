@@ -385,7 +385,7 @@ func (m *CardMutation) ClearOwner() {
 	m.clearedowner = true
 }
 
-// OwnerCleared returns if the "owner" edge to the User entity was cleared.
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
 func (m *CardMutation) OwnerCleared() bool {
 	return m.clearedowner
 }
@@ -429,7 +429,7 @@ func (m *CardMutation) ClearSpec() {
 	m.clearedspec = true
 }
 
-// SpecCleared returns if the "spec" edge to the Spec entity was cleared.
+// SpecCleared reports if the "spec" edge to the Spec entity was cleared.
 func (m *CardMutation) SpecCleared() bool {
 	return m.clearedspec
 }
@@ -1340,8 +1340,6 @@ type FieldTypeMutation struct {
 	addoptional_uint32         *uint32
 	optional_uint64            *uint64
 	addoptional_uint64         *uint64
-	duration                   *time.Duration
-	addduration                *time.Duration
 	state                      *fieldtype.State
 	optional_float             *float64
 	addoptional_float          *float64
@@ -1350,19 +1348,23 @@ type FieldTypeMutation struct {
 	datetime                   *time.Time
 	decimal                    *float64
 	adddecimal                 *float64
+	link_other                 **schema.Link
+	mac                        *schema.MAC
+	string_array               *schema.Strings
+	duration                   *time.Duration
+	addduration                *time.Duration
 	dir                        *http.Dir
 	ndir                       *http.Dir
 	str                        *sql.NullString
-	null_str                   *sql.NullString
+	null_str                   **sql.NullString
 	link                       *schema.Link
-	link_other                 *schema.Link
-	null_link                  *schema.Link
+	null_link                  **schema.Link
 	active                     *schema.Status
 	null_active                *schema.Status
-	deleted                    *sql.NullBool
-	deleted_at                 *sql.NullTime
+	deleted                    **sql.NullBool
+	deleted_at                 **sql.NullTime
 	ip                         *net.IP
-	null_int64                 *sql.NullInt64
+	null_int64                 **sql.NullInt64
 	schema_int                 *schema.Int
 	addschema_int              *schema.Int
 	schema_int8                *schema.Int8
@@ -1373,10 +1375,14 @@ type FieldTypeMutation struct {
 	addschema_float            *schema.Float64
 	schema_float32             *schema.Float32
 	addschema_float32          *schema.Float32
-	null_float                 *sql.NullFloat64
+	null_float                 **sql.NullFloat64
 	role                       *role.Role
-	mac                        *schema.MAC
 	uuid                       *uuid.UUID
+	strings                    *[]string
+	pair                       *schema.Pair
+	nil_pair                   **schema.Pair
+	vstring                    *schema.VString
+	triple                     *schema.Triple
 	clearedFields              map[string]struct{}
 	done                       bool
 	oldValue                   func(context.Context) (*FieldType, error)
@@ -2862,76 +2868,6 @@ func (m *FieldTypeMutation) ResetOptionalUint64() {
 	delete(m.clearedFields, fieldtype.FieldOptionalUint64)
 }
 
-// SetDuration sets the "duration" field.
-func (m *FieldTypeMutation) SetDuration(t time.Duration) {
-	m.duration = &t
-	m.addduration = nil
-}
-
-// Duration returns the value of the "duration" field in the mutation.
-func (m *FieldTypeMutation) Duration() (r time.Duration, exists bool) {
-	v := m.duration
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDuration returns the old "duration" field's value of the FieldType entity.
-// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldDuration(ctx context.Context) (v time.Duration, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldDuration is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldDuration requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDuration: %w", err)
-	}
-	return oldValue.Duration, nil
-}
-
-// AddDuration adds t to the "duration" field.
-func (m *FieldTypeMutation) AddDuration(t time.Duration) {
-	if m.addduration != nil {
-		*m.addduration += t
-	} else {
-		m.addduration = &t
-	}
-}
-
-// AddedDuration returns the value that was added to the "duration" field in this mutation.
-func (m *FieldTypeMutation) AddedDuration() (r time.Duration, exists bool) {
-	v := m.addduration
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ClearDuration clears the value of the "duration" field.
-func (m *FieldTypeMutation) ClearDuration() {
-	m.duration = nil
-	m.addduration = nil
-	m.clearedFields[fieldtype.FieldDuration] = struct{}{}
-}
-
-// DurationCleared returns if the "duration" field was cleared in this mutation.
-func (m *FieldTypeMutation) DurationCleared() bool {
-	_, ok := m.clearedFields[fieldtype.FieldDuration]
-	return ok
-}
-
-// ResetDuration resets all changes to the "duration" field.
-func (m *FieldTypeMutation) ResetDuration() {
-	m.duration = nil
-	m.addduration = nil
-	delete(m.clearedFields, fieldtype.FieldDuration)
-}
-
 // SetState sets the "state" field.
 func (m *FieldTypeMutation) SetState(f fieldtype.State) {
 	m.state = &f
@@ -3240,6 +3176,223 @@ func (m *FieldTypeMutation) ResetDecimal() {
 	delete(m.clearedFields, fieldtype.FieldDecimal)
 }
 
+// SetLinkOther sets the "link_other" field.
+func (m *FieldTypeMutation) SetLinkOther(s *schema.Link) {
+	m.link_other = &s
+}
+
+// LinkOther returns the value of the "link_other" field in the mutation.
+func (m *FieldTypeMutation) LinkOther() (r *schema.Link, exists bool) {
+	v := m.link_other
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLinkOther returns the old "link_other" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldLinkOther(ctx context.Context) (v *schema.Link, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldLinkOther is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldLinkOther requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLinkOther: %w", err)
+	}
+	return oldValue.LinkOther, nil
+}
+
+// ClearLinkOther clears the value of the "link_other" field.
+func (m *FieldTypeMutation) ClearLinkOther() {
+	m.link_other = nil
+	m.clearedFields[fieldtype.FieldLinkOther] = struct{}{}
+}
+
+// LinkOtherCleared returns if the "link_other" field was cleared in this mutation.
+func (m *FieldTypeMutation) LinkOtherCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldLinkOther]
+	return ok
+}
+
+// ResetLinkOther resets all changes to the "link_other" field.
+func (m *FieldTypeMutation) ResetLinkOther() {
+	m.link_other = nil
+	delete(m.clearedFields, fieldtype.FieldLinkOther)
+}
+
+// SetMAC sets the "mac" field.
+func (m *FieldTypeMutation) SetMAC(s schema.MAC) {
+	m.mac = &s
+}
+
+// MAC returns the value of the "mac" field in the mutation.
+func (m *FieldTypeMutation) MAC() (r schema.MAC, exists bool) {
+	v := m.mac
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMAC returns the old "mac" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldMAC(ctx context.Context) (v schema.MAC, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldMAC is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldMAC requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMAC: %w", err)
+	}
+	return oldValue.MAC, nil
+}
+
+// ClearMAC clears the value of the "mac" field.
+func (m *FieldTypeMutation) ClearMAC() {
+	m.mac = nil
+	m.clearedFields[fieldtype.FieldMAC] = struct{}{}
+}
+
+// MACCleared returns if the "mac" field was cleared in this mutation.
+func (m *FieldTypeMutation) MACCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldMAC]
+	return ok
+}
+
+// ResetMAC resets all changes to the "mac" field.
+func (m *FieldTypeMutation) ResetMAC() {
+	m.mac = nil
+	delete(m.clearedFields, fieldtype.FieldMAC)
+}
+
+// SetStringArray sets the "string_array" field.
+func (m *FieldTypeMutation) SetStringArray(s schema.Strings) {
+	m.string_array = &s
+}
+
+// StringArray returns the value of the "string_array" field in the mutation.
+func (m *FieldTypeMutation) StringArray() (r schema.Strings, exists bool) {
+	v := m.string_array
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStringArray returns the old "string_array" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldStringArray(ctx context.Context) (v schema.Strings, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldStringArray is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldStringArray requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStringArray: %w", err)
+	}
+	return oldValue.StringArray, nil
+}
+
+// ClearStringArray clears the value of the "string_array" field.
+func (m *FieldTypeMutation) ClearStringArray() {
+	m.string_array = nil
+	m.clearedFields[fieldtype.FieldStringArray] = struct{}{}
+}
+
+// StringArrayCleared returns if the "string_array" field was cleared in this mutation.
+func (m *FieldTypeMutation) StringArrayCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldStringArray]
+	return ok
+}
+
+// ResetStringArray resets all changes to the "string_array" field.
+func (m *FieldTypeMutation) ResetStringArray() {
+	m.string_array = nil
+	delete(m.clearedFields, fieldtype.FieldStringArray)
+}
+
+// SetDuration sets the "duration" field.
+func (m *FieldTypeMutation) SetDuration(t time.Duration) {
+	m.duration = &t
+	m.addduration = nil
+}
+
+// Duration returns the value of the "duration" field in the mutation.
+func (m *FieldTypeMutation) Duration() (r time.Duration, exists bool) {
+	v := m.duration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDuration returns the old "duration" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldDuration(ctx context.Context) (v time.Duration, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDuration is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDuration requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDuration: %w", err)
+	}
+	return oldValue.Duration, nil
+}
+
+// AddDuration adds t to the "duration" field.
+func (m *FieldTypeMutation) AddDuration(t time.Duration) {
+	if m.addduration != nil {
+		*m.addduration += t
+	} else {
+		m.addduration = &t
+	}
+}
+
+// AddedDuration returns the value that was added to the "duration" field in this mutation.
+func (m *FieldTypeMutation) AddedDuration() (r time.Duration, exists bool) {
+	v := m.addduration
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDuration clears the value of the "duration" field.
+func (m *FieldTypeMutation) ClearDuration() {
+	m.duration = nil
+	m.addduration = nil
+	m.clearedFields[fieldtype.FieldDuration] = struct{}{}
+}
+
+// DurationCleared returns if the "duration" field was cleared in this mutation.
+func (m *FieldTypeMutation) DurationCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldDuration]
+	return ok
+}
+
+// ResetDuration resets all changes to the "duration" field.
+func (m *FieldTypeMutation) ResetDuration() {
+	m.duration = nil
+	m.addduration = nil
+	delete(m.clearedFields, fieldtype.FieldDuration)
+}
+
 // SetDir sets the "dir" field.
 func (m *FieldTypeMutation) SetDir(h http.Dir) {
 	m.dir = &h
@@ -3271,22 +3424,9 @@ func (m *FieldTypeMutation) OldDir(ctx context.Context) (v http.Dir, err error) 
 	return oldValue.Dir, nil
 }
 
-// ClearDir clears the value of the "dir" field.
-func (m *FieldTypeMutation) ClearDir() {
-	m.dir = nil
-	m.clearedFields[fieldtype.FieldDir] = struct{}{}
-}
-
-// DirCleared returns if the "dir" field was cleared in this mutation.
-func (m *FieldTypeMutation) DirCleared() bool {
-	_, ok := m.clearedFields[fieldtype.FieldDir]
-	return ok
-}
-
 // ResetDir resets all changes to the "dir" field.
 func (m *FieldTypeMutation) ResetDir() {
 	m.dir = nil
-	delete(m.clearedFields, fieldtype.FieldDir)
 }
 
 // SetNdir sets the "ndir" field.
@@ -3388,12 +3528,12 @@ func (m *FieldTypeMutation) ResetStr() {
 }
 
 // SetNullStr sets the "null_str" field.
-func (m *FieldTypeMutation) SetNullStr(ss sql.NullString) {
+func (m *FieldTypeMutation) SetNullStr(ss *sql.NullString) {
 	m.null_str = &ss
 }
 
 // NullStr returns the value of the "null_str" field in the mutation.
-func (m *FieldTypeMutation) NullStr() (r sql.NullString, exists bool) {
+func (m *FieldTypeMutation) NullStr() (r *sql.NullString, exists bool) {
 	v := m.null_str
 	if v == nil {
 		return
@@ -3485,62 +3625,13 @@ func (m *FieldTypeMutation) ResetLink() {
 	delete(m.clearedFields, fieldtype.FieldLink)
 }
 
-// SetLinkOther sets the "link_other" field.
-func (m *FieldTypeMutation) SetLinkOther(s schema.Link) {
-	m.link_other = &s
-}
-
-// LinkOther returns the value of the "link_other" field in the mutation.
-func (m *FieldTypeMutation) LinkOther() (r schema.Link, exists bool) {
-	v := m.link_other
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldLinkOther returns the old "link_other" field's value of the FieldType entity.
-// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldLinkOther(ctx context.Context) (v schema.Link, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldLinkOther is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldLinkOther requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldLinkOther: %w", err)
-	}
-	return oldValue.LinkOther, nil
-}
-
-// ClearLinkOther clears the value of the "link_other" field.
-func (m *FieldTypeMutation) ClearLinkOther() {
-	m.link_other = nil
-	m.clearedFields[fieldtype.FieldLinkOther] = struct{}{}
-}
-
-// LinkOtherCleared returns if the "link_other" field was cleared in this mutation.
-func (m *FieldTypeMutation) LinkOtherCleared() bool {
-	_, ok := m.clearedFields[fieldtype.FieldLinkOther]
-	return ok
-}
-
-// ResetLinkOther resets all changes to the "link_other" field.
-func (m *FieldTypeMutation) ResetLinkOther() {
-	m.link_other = nil
-	delete(m.clearedFields, fieldtype.FieldLinkOther)
-}
-
 // SetNullLink sets the "null_link" field.
-func (m *FieldTypeMutation) SetNullLink(s schema.Link) {
+func (m *FieldTypeMutation) SetNullLink(s *schema.Link) {
 	m.null_link = &s
 }
 
 // NullLink returns the value of the "null_link" field in the mutation.
-func (m *FieldTypeMutation) NullLink() (r schema.Link, exists bool) {
+func (m *FieldTypeMutation) NullLink() (r *schema.Link, exists bool) {
 	v := m.null_link
 	if v == nil {
 		return
@@ -3682,12 +3773,12 @@ func (m *FieldTypeMutation) ResetNullActive() {
 }
 
 // SetDeleted sets the "deleted" field.
-func (m *FieldTypeMutation) SetDeleted(sb sql.NullBool) {
+func (m *FieldTypeMutation) SetDeleted(sb *sql.NullBool) {
 	m.deleted = &sb
 }
 
 // Deleted returns the value of the "deleted" field in the mutation.
-func (m *FieldTypeMutation) Deleted() (r sql.NullBool, exists bool) {
+func (m *FieldTypeMutation) Deleted() (r *sql.NullBool, exists bool) {
 	v := m.deleted
 	if v == nil {
 		return
@@ -3698,7 +3789,7 @@ func (m *FieldTypeMutation) Deleted() (r sql.NullBool, exists bool) {
 // OldDeleted returns the old "deleted" field's value of the FieldType entity.
 // If the FieldType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldDeleted(ctx context.Context) (v sql.NullBool, err error) {
+func (m *FieldTypeMutation) OldDeleted(ctx context.Context) (v *sql.NullBool, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldDeleted is only allowed on UpdateOne operations")
 	}
@@ -3731,12 +3822,12 @@ func (m *FieldTypeMutation) ResetDeleted() {
 }
 
 // SetDeletedAt sets the "deleted_at" field.
-func (m *FieldTypeMutation) SetDeletedAt(st sql.NullTime) {
+func (m *FieldTypeMutation) SetDeletedAt(st *sql.NullTime) {
 	m.deleted_at = &st
 }
 
 // DeletedAt returns the value of the "deleted_at" field in the mutation.
-func (m *FieldTypeMutation) DeletedAt() (r sql.NullTime, exists bool) {
+func (m *FieldTypeMutation) DeletedAt() (r *sql.NullTime, exists bool) {
 	v := m.deleted_at
 	if v == nil {
 		return
@@ -3747,7 +3838,7 @@ func (m *FieldTypeMutation) DeletedAt() (r sql.NullTime, exists bool) {
 // OldDeletedAt returns the old "deleted_at" field's value of the FieldType entity.
 // If the FieldType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldDeletedAt(ctx context.Context) (v sql.NullTime, err error) {
+func (m *FieldTypeMutation) OldDeletedAt(ctx context.Context) (v *sql.NullTime, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldDeletedAt is only allowed on UpdateOne operations")
 	}
@@ -3829,12 +3920,12 @@ func (m *FieldTypeMutation) ResetIP() {
 }
 
 // SetNullInt64 sets the "null_int64" field.
-func (m *FieldTypeMutation) SetNullInt64(si sql.NullInt64) {
+func (m *FieldTypeMutation) SetNullInt64(si *sql.NullInt64) {
 	m.null_int64 = &si
 }
 
 // NullInt64 returns the value of the "null_int64" field in the mutation.
-func (m *FieldTypeMutation) NullInt64() (r sql.NullInt64, exists bool) {
+func (m *FieldTypeMutation) NullInt64() (r *sql.NullInt64, exists bool) {
 	v := m.null_int64
 	if v == nil {
 		return
@@ -3845,7 +3936,7 @@ func (m *FieldTypeMutation) NullInt64() (r sql.NullInt64, exists bool) {
 // OldNullInt64 returns the old "null_int64" field's value of the FieldType entity.
 // If the FieldType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldNullInt64(ctx context.Context) (v sql.NullInt64, err error) {
+func (m *FieldTypeMutation) OldNullInt64(ctx context.Context) (v *sql.NullInt64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldNullInt64 is only allowed on UpdateOne operations")
 	}
@@ -4228,12 +4319,12 @@ func (m *FieldTypeMutation) ResetSchemaFloat32() {
 }
 
 // SetNullFloat sets the "null_float" field.
-func (m *FieldTypeMutation) SetNullFloat(sf sql.NullFloat64) {
+func (m *FieldTypeMutation) SetNullFloat(sf *sql.NullFloat64) {
 	m.null_float = &sf
 }
 
 // NullFloat returns the value of the "null_float" field in the mutation.
-func (m *FieldTypeMutation) NullFloat() (r sql.NullFloat64, exists bool) {
+func (m *FieldTypeMutation) NullFloat() (r *sql.NullFloat64, exists bool) {
 	v := m.null_float
 	if v == nil {
 		return
@@ -4244,7 +4335,7 @@ func (m *FieldTypeMutation) NullFloat() (r sql.NullFloat64, exists bool) {
 // OldNullFloat returns the old "null_float" field's value of the FieldType entity.
 // If the FieldType object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldNullFloat(ctx context.Context) (v sql.NullFloat64, err error) {
+func (m *FieldTypeMutation) OldNullFloat(ctx context.Context) (v *sql.NullFloat64, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, fmt.Errorf("OldNullFloat is only allowed on UpdateOne operations")
 	}
@@ -4312,55 +4403,6 @@ func (m *FieldTypeMutation) ResetRole() {
 	m.role = nil
 }
 
-// SetMAC sets the "mac" field.
-func (m *FieldTypeMutation) SetMAC(s schema.MAC) {
-	m.mac = &s
-}
-
-// MAC returns the value of the "mac" field in the mutation.
-func (m *FieldTypeMutation) MAC() (r schema.MAC, exists bool) {
-	v := m.mac
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMAC returns the old "mac" field's value of the FieldType entity.
-// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *FieldTypeMutation) OldMAC(ctx context.Context) (v schema.MAC, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, fmt.Errorf("OldMAC is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, fmt.Errorf("OldMAC requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMAC: %w", err)
-	}
-	return oldValue.MAC, nil
-}
-
-// ClearMAC clears the value of the "mac" field.
-func (m *FieldTypeMutation) ClearMAC() {
-	m.mac = nil
-	m.clearedFields[fieldtype.FieldMAC] = struct{}{}
-}
-
-// MACCleared returns if the "mac" field was cleared in this mutation.
-func (m *FieldTypeMutation) MACCleared() bool {
-	_, ok := m.clearedFields[fieldtype.FieldMAC]
-	return ok
-}
-
-// ResetMAC resets all changes to the "mac" field.
-func (m *FieldTypeMutation) ResetMAC() {
-	m.mac = nil
-	delete(m.clearedFields, fieldtype.FieldMAC)
-}
-
 // SetUUID sets the "uuid" field.
 func (m *FieldTypeMutation) SetUUID(u uuid.UUID) {
 	m.uuid = &u
@@ -4410,6 +4452,212 @@ func (m *FieldTypeMutation) ResetUUID() {
 	delete(m.clearedFields, fieldtype.FieldUUID)
 }
 
+// SetStrings sets the "strings" field.
+func (m *FieldTypeMutation) SetStrings(s []string) {
+	m.strings = &s
+}
+
+// Strings returns the value of the "strings" field in the mutation.
+func (m *FieldTypeMutation) Strings() (r []string, exists bool) {
+	v := m.strings
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStrings returns the old "strings" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldStrings(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldStrings is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldStrings requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStrings: %w", err)
+	}
+	return oldValue.Strings, nil
+}
+
+// ClearStrings clears the value of the "strings" field.
+func (m *FieldTypeMutation) ClearStrings() {
+	m.strings = nil
+	m.clearedFields[fieldtype.FieldStrings] = struct{}{}
+}
+
+// StringsCleared returns if the "strings" field was cleared in this mutation.
+func (m *FieldTypeMutation) StringsCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldStrings]
+	return ok
+}
+
+// ResetStrings resets all changes to the "strings" field.
+func (m *FieldTypeMutation) ResetStrings() {
+	m.strings = nil
+	delete(m.clearedFields, fieldtype.FieldStrings)
+}
+
+// SetPair sets the "pair" field.
+func (m *FieldTypeMutation) SetPair(s schema.Pair) {
+	m.pair = &s
+}
+
+// Pair returns the value of the "pair" field in the mutation.
+func (m *FieldTypeMutation) Pair() (r schema.Pair, exists bool) {
+	v := m.pair
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPair returns the old "pair" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldPair(ctx context.Context) (v schema.Pair, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldPair is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldPair requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPair: %w", err)
+	}
+	return oldValue.Pair, nil
+}
+
+// ResetPair resets all changes to the "pair" field.
+func (m *FieldTypeMutation) ResetPair() {
+	m.pair = nil
+}
+
+// SetNilPair sets the "nil_pair" field.
+func (m *FieldTypeMutation) SetNilPair(s *schema.Pair) {
+	m.nil_pair = &s
+}
+
+// NilPair returns the value of the "nil_pair" field in the mutation.
+func (m *FieldTypeMutation) NilPair() (r *schema.Pair, exists bool) {
+	v := m.nil_pair
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNilPair returns the old "nil_pair" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldNilPair(ctx context.Context) (v *schema.Pair, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldNilPair is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldNilPair requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNilPair: %w", err)
+	}
+	return oldValue.NilPair, nil
+}
+
+// ClearNilPair clears the value of the "nil_pair" field.
+func (m *FieldTypeMutation) ClearNilPair() {
+	m.nil_pair = nil
+	m.clearedFields[fieldtype.FieldNilPair] = struct{}{}
+}
+
+// NilPairCleared returns if the "nil_pair" field was cleared in this mutation.
+func (m *FieldTypeMutation) NilPairCleared() bool {
+	_, ok := m.clearedFields[fieldtype.FieldNilPair]
+	return ok
+}
+
+// ResetNilPair resets all changes to the "nil_pair" field.
+func (m *FieldTypeMutation) ResetNilPair() {
+	m.nil_pair = nil
+	delete(m.clearedFields, fieldtype.FieldNilPair)
+}
+
+// SetVstring sets the "vstring" field.
+func (m *FieldTypeMutation) SetVstring(ss schema.VString) {
+	m.vstring = &ss
+}
+
+// Vstring returns the value of the "vstring" field in the mutation.
+func (m *FieldTypeMutation) Vstring() (r schema.VString, exists bool) {
+	v := m.vstring
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVstring returns the old "vstring" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldVstring(ctx context.Context) (v schema.VString, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldVstring is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldVstring requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVstring: %w", err)
+	}
+	return oldValue.Vstring, nil
+}
+
+// ResetVstring resets all changes to the "vstring" field.
+func (m *FieldTypeMutation) ResetVstring() {
+	m.vstring = nil
+}
+
+// SetTriple sets the "triple" field.
+func (m *FieldTypeMutation) SetTriple(s schema.Triple) {
+	m.triple = &s
+}
+
+// Triple returns the value of the "triple" field in the mutation.
+func (m *FieldTypeMutation) Triple() (r schema.Triple, exists bool) {
+	v := m.triple
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriple returns the old "triple" field's value of the FieldType entity.
+// If the FieldType object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *FieldTypeMutation) OldTriple(ctx context.Context) (v schema.Triple, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldTriple is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldTriple requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriple: %w", err)
+	}
+	return oldValue.Triple, nil
+}
+
+// ResetTriple resets all changes to the "triple" field.
+func (m *FieldTypeMutation) ResetTriple() {
+	m.triple = nil
+}
+
 // Op returns the operation name.
 func (m *FieldTypeMutation) Op() Op {
 	return m.op
@@ -4424,7 +4672,7 @@ func (m *FieldTypeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *FieldTypeMutation) Fields() []string {
-	fields := make([]string, 0, 49)
+	fields := make([]string, 0, 55)
 	if m.int != nil {
 		fields = append(fields, fieldtype.FieldInt)
 	}
@@ -4488,9 +4736,6 @@ func (m *FieldTypeMutation) Fields() []string {
 	if m.optional_uint64 != nil {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
-	if m.duration != nil {
-		fields = append(fields, fieldtype.FieldDuration)
-	}
 	if m.state != nil {
 		fields = append(fields, fieldtype.FieldState)
 	}
@@ -4506,6 +4751,18 @@ func (m *FieldTypeMutation) Fields() []string {
 	if m.decimal != nil {
 		fields = append(fields, fieldtype.FieldDecimal)
 	}
+	if m.link_other != nil {
+		fields = append(fields, fieldtype.FieldLinkOther)
+	}
+	if m.mac != nil {
+		fields = append(fields, fieldtype.FieldMAC)
+	}
+	if m.string_array != nil {
+		fields = append(fields, fieldtype.FieldStringArray)
+	}
+	if m.duration != nil {
+		fields = append(fields, fieldtype.FieldDuration)
+	}
 	if m.dir != nil {
 		fields = append(fields, fieldtype.FieldDir)
 	}
@@ -4520,9 +4777,6 @@ func (m *FieldTypeMutation) Fields() []string {
 	}
 	if m.link != nil {
 		fields = append(fields, fieldtype.FieldLink)
-	}
-	if m.link_other != nil {
-		fields = append(fields, fieldtype.FieldLinkOther)
 	}
 	if m.null_link != nil {
 		fields = append(fields, fieldtype.FieldNullLink)
@@ -4566,11 +4820,23 @@ func (m *FieldTypeMutation) Fields() []string {
 	if m.role != nil {
 		fields = append(fields, fieldtype.FieldRole)
 	}
-	if m.mac != nil {
-		fields = append(fields, fieldtype.FieldMAC)
-	}
 	if m.uuid != nil {
 		fields = append(fields, fieldtype.FieldUUID)
+	}
+	if m.strings != nil {
+		fields = append(fields, fieldtype.FieldStrings)
+	}
+	if m.pair != nil {
+		fields = append(fields, fieldtype.FieldPair)
+	}
+	if m.nil_pair != nil {
+		fields = append(fields, fieldtype.FieldNilPair)
+	}
+	if m.vstring != nil {
+		fields = append(fields, fieldtype.FieldVstring)
+	}
+	if m.triple != nil {
+		fields = append(fields, fieldtype.FieldTriple)
 	}
 	return fields
 }
@@ -4622,8 +4888,6 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.OptionalUint32()
 	case fieldtype.FieldOptionalUint64:
 		return m.OptionalUint64()
-	case fieldtype.FieldDuration:
-		return m.Duration()
 	case fieldtype.FieldState:
 		return m.State()
 	case fieldtype.FieldOptionalFloat:
@@ -4634,6 +4898,14 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.Datetime()
 	case fieldtype.FieldDecimal:
 		return m.Decimal()
+	case fieldtype.FieldLinkOther:
+		return m.LinkOther()
+	case fieldtype.FieldMAC:
+		return m.MAC()
+	case fieldtype.FieldStringArray:
+		return m.StringArray()
+	case fieldtype.FieldDuration:
+		return m.Duration()
 	case fieldtype.FieldDir:
 		return m.Dir()
 	case fieldtype.FieldNdir:
@@ -4644,8 +4916,6 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.NullStr()
 	case fieldtype.FieldLink:
 		return m.Link()
-	case fieldtype.FieldLinkOther:
-		return m.LinkOther()
 	case fieldtype.FieldNullLink:
 		return m.NullLink()
 	case fieldtype.FieldActive:
@@ -4674,10 +4944,18 @@ func (m *FieldTypeMutation) Field(name string) (ent.Value, bool) {
 		return m.NullFloat()
 	case fieldtype.FieldRole:
 		return m.Role()
-	case fieldtype.FieldMAC:
-		return m.MAC()
 	case fieldtype.FieldUUID:
 		return m.UUID()
+	case fieldtype.FieldStrings:
+		return m.Strings()
+	case fieldtype.FieldPair:
+		return m.Pair()
+	case fieldtype.FieldNilPair:
+		return m.NilPair()
+	case fieldtype.FieldVstring:
+		return m.Vstring()
+	case fieldtype.FieldTriple:
+		return m.Triple()
 	}
 	return nil, false
 }
@@ -4729,8 +5007,6 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldOptionalUint32(ctx)
 	case fieldtype.FieldOptionalUint64:
 		return m.OldOptionalUint64(ctx)
-	case fieldtype.FieldDuration:
-		return m.OldDuration(ctx)
 	case fieldtype.FieldState:
 		return m.OldState(ctx)
 	case fieldtype.FieldOptionalFloat:
@@ -4741,6 +5017,14 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldDatetime(ctx)
 	case fieldtype.FieldDecimal:
 		return m.OldDecimal(ctx)
+	case fieldtype.FieldLinkOther:
+		return m.OldLinkOther(ctx)
+	case fieldtype.FieldMAC:
+		return m.OldMAC(ctx)
+	case fieldtype.FieldStringArray:
+		return m.OldStringArray(ctx)
+	case fieldtype.FieldDuration:
+		return m.OldDuration(ctx)
 	case fieldtype.FieldDir:
 		return m.OldDir(ctx)
 	case fieldtype.FieldNdir:
@@ -4751,8 +5035,6 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldNullStr(ctx)
 	case fieldtype.FieldLink:
 		return m.OldLink(ctx)
-	case fieldtype.FieldLinkOther:
-		return m.OldLinkOther(ctx)
 	case fieldtype.FieldNullLink:
 		return m.OldNullLink(ctx)
 	case fieldtype.FieldActive:
@@ -4781,10 +5063,18 @@ func (m *FieldTypeMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldNullFloat(ctx)
 	case fieldtype.FieldRole:
 		return m.OldRole(ctx)
-	case fieldtype.FieldMAC:
-		return m.OldMAC(ctx)
 	case fieldtype.FieldUUID:
 		return m.OldUUID(ctx)
+	case fieldtype.FieldStrings:
+		return m.OldStrings(ctx)
+	case fieldtype.FieldPair:
+		return m.OldPair(ctx)
+	case fieldtype.FieldNilPair:
+		return m.OldNilPair(ctx)
+	case fieldtype.FieldVstring:
+		return m.OldVstring(ctx)
+	case fieldtype.FieldTriple:
+		return m.OldTriple(ctx)
 	}
 	return nil, fmt.Errorf("unknown FieldType field %s", name)
 }
@@ -4941,13 +5231,6 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetOptionalUint64(v)
 		return nil
-	case fieldtype.FieldDuration:
-		v, ok := value.(time.Duration)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDuration(v)
-		return nil
 	case fieldtype.FieldState:
 		v, ok := value.(fieldtype.State)
 		if !ok {
@@ -4983,6 +5266,34 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDecimal(v)
 		return nil
+	case fieldtype.FieldLinkOther:
+		v, ok := value.(*schema.Link)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLinkOther(v)
+		return nil
+	case fieldtype.FieldMAC:
+		v, ok := value.(schema.MAC)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMAC(v)
+		return nil
+	case fieldtype.FieldStringArray:
+		v, ok := value.(schema.Strings)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStringArray(v)
+		return nil
+	case fieldtype.FieldDuration:
+		v, ok := value.(time.Duration)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDuration(v)
+		return nil
 	case fieldtype.FieldDir:
 		v, ok := value.(http.Dir)
 		if !ok {
@@ -5005,7 +5316,7 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetStr(v)
 		return nil
 	case fieldtype.FieldNullStr:
-		v, ok := value.(sql.NullString)
+		v, ok := value.(*sql.NullString)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5018,15 +5329,8 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLink(v)
 		return nil
-	case fieldtype.FieldLinkOther:
-		v, ok := value.(schema.Link)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetLinkOther(v)
-		return nil
 	case fieldtype.FieldNullLink:
-		v, ok := value.(schema.Link)
+		v, ok := value.(*schema.Link)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5047,14 +5351,14 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetNullActive(v)
 		return nil
 	case fieldtype.FieldDeleted:
-		v, ok := value.(sql.NullBool)
+		v, ok := value.(*sql.NullBool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDeleted(v)
 		return nil
 	case fieldtype.FieldDeletedAt:
-		v, ok := value.(sql.NullTime)
+		v, ok := value.(*sql.NullTime)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5068,7 +5372,7 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetIP(v)
 		return nil
 	case fieldtype.FieldNullInt64:
-		v, ok := value.(sql.NullInt64)
+		v, ok := value.(*sql.NullInt64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5110,7 +5414,7 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		m.SetSchemaFloat32(v)
 		return nil
 	case fieldtype.FieldNullFloat:
-		v, ok := value.(sql.NullFloat64)
+		v, ok := value.(*sql.NullFloat64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -5123,19 +5427,47 @@ func (m *FieldTypeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRole(v)
 		return nil
-	case fieldtype.FieldMAC:
-		v, ok := value.(schema.MAC)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMAC(v)
-		return nil
 	case fieldtype.FieldUUID:
 		v, ok := value.(uuid.UUID)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUUID(v)
+		return nil
+	case fieldtype.FieldStrings:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStrings(v)
+		return nil
+	case fieldtype.FieldPair:
+		v, ok := value.(schema.Pair)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPair(v)
+		return nil
+	case fieldtype.FieldNilPair:
+		v, ok := value.(*schema.Pair)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNilPair(v)
+		return nil
+	case fieldtype.FieldVstring:
+		v, ok := value.(schema.VString)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVstring(v)
+		return nil
+	case fieldtype.FieldTriple:
+		v, ok := value.(schema.Triple)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriple(v)
 		return nil
 	}
 	return fmt.Errorf("unknown FieldType field %s", name)
@@ -5208,9 +5540,6 @@ func (m *FieldTypeMutation) AddedFields() []string {
 	if m.addoptional_uint64 != nil {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
-	if m.addduration != nil {
-		fields = append(fields, fieldtype.FieldDuration)
-	}
 	if m.addoptional_float != nil {
 		fields = append(fields, fieldtype.FieldOptionalFloat)
 	}
@@ -5219,6 +5548,9 @@ func (m *FieldTypeMutation) AddedFields() []string {
 	}
 	if m.adddecimal != nil {
 		fields = append(fields, fieldtype.FieldDecimal)
+	}
+	if m.addduration != nil {
+		fields = append(fields, fieldtype.FieldDuration)
 	}
 	if m.addschema_int != nil {
 		fields = append(fields, fieldtype.FieldSchemaInt)
@@ -5285,14 +5617,14 @@ func (m *FieldTypeMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedOptionalUint32()
 	case fieldtype.FieldOptionalUint64:
 		return m.AddedOptionalUint64()
-	case fieldtype.FieldDuration:
-		return m.AddedDuration()
 	case fieldtype.FieldOptionalFloat:
 		return m.AddedOptionalFloat()
 	case fieldtype.FieldOptionalFloat32:
 		return m.AddedOptionalFloat32()
 	case fieldtype.FieldDecimal:
 		return m.AddedDecimal()
+	case fieldtype.FieldDuration:
+		return m.AddedDuration()
 	case fieldtype.FieldSchemaInt:
 		return m.AddedSchemaInt()
 	case fieldtype.FieldSchemaInt8:
@@ -5459,13 +5791,6 @@ func (m *FieldTypeMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddOptionalUint64(v)
 		return nil
-	case fieldtype.FieldDuration:
-		v, ok := value.(time.Duration)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddDuration(v)
-		return nil
 	case fieldtype.FieldOptionalFloat:
 		v, ok := value.(float64)
 		if !ok {
@@ -5486,6 +5811,13 @@ func (m *FieldTypeMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddDecimal(v)
+		return nil
+	case fieldtype.FieldDuration:
+		v, ok := value.(time.Duration)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDuration(v)
 		return nil
 	case fieldtype.FieldSchemaInt:
 		v, ok := value.(schema.Int)
@@ -5578,9 +5910,6 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(fieldtype.FieldOptionalUint64) {
 		fields = append(fields, fieldtype.FieldOptionalUint64)
 	}
-	if m.FieldCleared(fieldtype.FieldDuration) {
-		fields = append(fields, fieldtype.FieldDuration)
-	}
 	if m.FieldCleared(fieldtype.FieldState) {
 		fields = append(fields, fieldtype.FieldState)
 	}
@@ -5596,8 +5925,17 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(fieldtype.FieldDecimal) {
 		fields = append(fields, fieldtype.FieldDecimal)
 	}
-	if m.FieldCleared(fieldtype.FieldDir) {
-		fields = append(fields, fieldtype.FieldDir)
+	if m.FieldCleared(fieldtype.FieldLinkOther) {
+		fields = append(fields, fieldtype.FieldLinkOther)
+	}
+	if m.FieldCleared(fieldtype.FieldMAC) {
+		fields = append(fields, fieldtype.FieldMAC)
+	}
+	if m.FieldCleared(fieldtype.FieldStringArray) {
+		fields = append(fields, fieldtype.FieldStringArray)
+	}
+	if m.FieldCleared(fieldtype.FieldDuration) {
+		fields = append(fields, fieldtype.FieldDuration)
 	}
 	if m.FieldCleared(fieldtype.FieldNdir) {
 		fields = append(fields, fieldtype.FieldNdir)
@@ -5610,9 +5948,6 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(fieldtype.FieldLink) {
 		fields = append(fields, fieldtype.FieldLink)
-	}
-	if m.FieldCleared(fieldtype.FieldLinkOther) {
-		fields = append(fields, fieldtype.FieldLinkOther)
 	}
 	if m.FieldCleared(fieldtype.FieldNullLink) {
 		fields = append(fields, fieldtype.FieldNullLink)
@@ -5653,11 +5988,14 @@ func (m *FieldTypeMutation) ClearedFields() []string {
 	if m.FieldCleared(fieldtype.FieldNullFloat) {
 		fields = append(fields, fieldtype.FieldNullFloat)
 	}
-	if m.FieldCleared(fieldtype.FieldMAC) {
-		fields = append(fields, fieldtype.FieldMAC)
-	}
 	if m.FieldCleared(fieldtype.FieldUUID) {
 		fields = append(fields, fieldtype.FieldUUID)
+	}
+	if m.FieldCleared(fieldtype.FieldStrings) {
+		fields = append(fields, fieldtype.FieldStrings)
+	}
+	if m.FieldCleared(fieldtype.FieldNilPair) {
+		fields = append(fields, fieldtype.FieldNilPair)
 	}
 	return fields
 }
@@ -5721,9 +6059,6 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 	case fieldtype.FieldOptionalUint64:
 		m.ClearOptionalUint64()
 		return nil
-	case fieldtype.FieldDuration:
-		m.ClearDuration()
-		return nil
 	case fieldtype.FieldState:
 		m.ClearState()
 		return nil
@@ -5739,8 +6074,17 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 	case fieldtype.FieldDecimal:
 		m.ClearDecimal()
 		return nil
-	case fieldtype.FieldDir:
-		m.ClearDir()
+	case fieldtype.FieldLinkOther:
+		m.ClearLinkOther()
+		return nil
+	case fieldtype.FieldMAC:
+		m.ClearMAC()
+		return nil
+	case fieldtype.FieldStringArray:
+		m.ClearStringArray()
+		return nil
+	case fieldtype.FieldDuration:
+		m.ClearDuration()
 		return nil
 	case fieldtype.FieldNdir:
 		m.ClearNdir()
@@ -5753,9 +6097,6 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 		return nil
 	case fieldtype.FieldLink:
 		m.ClearLink()
-		return nil
-	case fieldtype.FieldLinkOther:
-		m.ClearLinkOther()
 		return nil
 	case fieldtype.FieldNullLink:
 		m.ClearNullLink()
@@ -5796,11 +6137,14 @@ func (m *FieldTypeMutation) ClearField(name string) error {
 	case fieldtype.FieldNullFloat:
 		m.ClearNullFloat()
 		return nil
-	case fieldtype.FieldMAC:
-		m.ClearMAC()
-		return nil
 	case fieldtype.FieldUUID:
 		m.ClearUUID()
+		return nil
+	case fieldtype.FieldStrings:
+		m.ClearStrings()
+		return nil
+	case fieldtype.FieldNilPair:
+		m.ClearNilPair()
 		return nil
 	}
 	return fmt.Errorf("unknown FieldType nullable field %s", name)
@@ -5873,9 +6217,6 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 	case fieldtype.FieldOptionalUint64:
 		m.ResetOptionalUint64()
 		return nil
-	case fieldtype.FieldDuration:
-		m.ResetDuration()
-		return nil
 	case fieldtype.FieldState:
 		m.ResetState()
 		return nil
@@ -5891,6 +6232,18 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 	case fieldtype.FieldDecimal:
 		m.ResetDecimal()
 		return nil
+	case fieldtype.FieldLinkOther:
+		m.ResetLinkOther()
+		return nil
+	case fieldtype.FieldMAC:
+		m.ResetMAC()
+		return nil
+	case fieldtype.FieldStringArray:
+		m.ResetStringArray()
+		return nil
+	case fieldtype.FieldDuration:
+		m.ResetDuration()
+		return nil
 	case fieldtype.FieldDir:
 		m.ResetDir()
 		return nil
@@ -5905,9 +6258,6 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 		return nil
 	case fieldtype.FieldLink:
 		m.ResetLink()
-		return nil
-	case fieldtype.FieldLinkOther:
-		m.ResetLinkOther()
 		return nil
 	case fieldtype.FieldNullLink:
 		m.ResetNullLink()
@@ -5951,11 +6301,23 @@ func (m *FieldTypeMutation) ResetField(name string) error {
 	case fieldtype.FieldRole:
 		m.ResetRole()
 		return nil
-	case fieldtype.FieldMAC:
-		m.ResetMAC()
-		return nil
 	case fieldtype.FieldUUID:
 		m.ResetUUID()
+		return nil
+	case fieldtype.FieldStrings:
+		m.ResetStrings()
+		return nil
+	case fieldtype.FieldPair:
+		m.ResetPair()
+		return nil
+	case fieldtype.FieldNilPair:
+		m.ResetNilPair()
+		return nil
+	case fieldtype.FieldVstring:
+		m.ResetVstring()
+		return nil
+	case fieldtype.FieldTriple:
+		m.ResetTriple()
 		return nil
 	}
 	return fmt.Errorf("unknown FieldType field %s", name)
@@ -6362,7 +6724,7 @@ func (m *FileMutation) ClearOwner() {
 	m.clearedowner = true
 }
 
-// OwnerCleared returns if the "owner" edge to the User entity was cleared.
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
 func (m *FileMutation) OwnerCleared() bool {
 	return m.clearedowner
 }
@@ -6401,7 +6763,7 @@ func (m *FileMutation) ClearType() {
 	m.cleared_type = true
 }
 
-// TypeCleared returns if the "type" edge to the FileType entity was cleared.
+// TypeCleared reports if the "type" edge to the FileType entity was cleared.
 func (m *FileMutation) TypeCleared() bool {
 	return m.cleared_type
 }
@@ -6445,7 +6807,7 @@ func (m *FileMutation) ClearFieldEdge() {
 	m.clearedfield = true
 }
 
-// FieldEdgeCleared returns if the "field" edge to the FieldType entity was cleared.
+// FieldEdgeCleared reports if the "field" edge to the FieldType entity was cleared.
 func (m *FileMutation) FieldEdgeCleared() bool {
 	return m.clearedfield
 }
@@ -7038,7 +7400,7 @@ func (m *FileTypeMutation) ClearFiles() {
 	m.clearedfiles = true
 }
 
-// FilesCleared returns if the "files" edge to the File entity was cleared.
+// FilesCleared reports if the "files" edge to the File entity was cleared.
 func (m *FileTypeMutation) FilesCleared() bool {
 	return m.clearedfiles
 }
@@ -7880,7 +8242,7 @@ func (m *GroupMutation) ClearFiles() {
 	m.clearedfiles = true
 }
 
-// FilesCleared returns if the "files" edge to the File entity was cleared.
+// FilesCleared reports if the "files" edge to the File entity was cleared.
 func (m *GroupMutation) FilesCleared() bool {
 	return m.clearedfiles
 }
@@ -7933,7 +8295,7 @@ func (m *GroupMutation) ClearBlocked() {
 	m.clearedblocked = true
 }
 
-// BlockedCleared returns if the "blocked" edge to the User entity was cleared.
+// BlockedCleared reports if the "blocked" edge to the User entity was cleared.
 func (m *GroupMutation) BlockedCleared() bool {
 	return m.clearedblocked
 }
@@ -7986,7 +8348,7 @@ func (m *GroupMutation) ClearUsers() {
 	m.clearedusers = true
 }
 
-// UsersCleared returns if the "users" edge to the User entity was cleared.
+// UsersCleared reports if the "users" edge to the User entity was cleared.
 func (m *GroupMutation) UsersCleared() bool {
 	return m.clearedusers
 }
@@ -8034,7 +8396,7 @@ func (m *GroupMutation) ClearInfo() {
 	m.clearedinfo = true
 }
 
-// InfoCleared returns if the "info" edge to the GroupInfo entity was cleared.
+// InfoCleared reports if the "info" edge to the GroupInfo entity was cleared.
 func (m *GroupMutation) InfoCleared() bool {
 	return m.clearedinfo
 }
@@ -8630,7 +8992,7 @@ func (m *GroupInfoMutation) ClearGroups() {
 	m.clearedgroups = true
 }
 
-// GroupsCleared returns if the "groups" edge to the Group entity was cleared.
+// GroupsCleared reports if the "groups" edge to the Group entity was cleared.
 func (m *GroupInfoMutation) GroupsCleared() bool {
 	return m.clearedgroups
 }
@@ -9297,7 +9659,7 @@ func (m *NodeMutation) ClearPrev() {
 	m.clearedprev = true
 }
 
-// PrevCleared returns if the "prev" edge to the Node entity was cleared.
+// PrevCleared reports if the "prev" edge to the Node entity was cleared.
 func (m *NodeMutation) PrevCleared() bool {
 	return m.clearedprev
 }
@@ -9336,7 +9698,7 @@ func (m *NodeMutation) ClearNext() {
 	m.clearednext = true
 }
 
-// NextCleared returns if the "next" edge to the Node entity was cleared.
+// NextCleared reports if the "next" edge to the Node entity was cleared.
 func (m *NodeMutation) NextCleared() bool {
 	return m.clearednext
 }
@@ -9786,7 +10148,7 @@ func (m *PetMutation) ClearTeam() {
 	m.clearedteam = true
 }
 
-// TeamCleared returns if the "team" edge to the User entity was cleared.
+// TeamCleared reports if the "team" edge to the User entity was cleared.
 func (m *PetMutation) TeamCleared() bool {
 	return m.clearedteam
 }
@@ -9825,7 +10187,7 @@ func (m *PetMutation) ClearOwner() {
 	m.clearedowner = true
 }
 
-// OwnerCleared returns if the "owner" edge to the User entity was cleared.
+// OwnerCleared reports if the "owner" edge to the User entity was cleared.
 func (m *PetMutation) OwnerCleared() bool {
 	return m.clearedowner
 }
@@ -10194,7 +10556,7 @@ func (m *SpecMutation) ClearCard() {
 	m.clearedcard = true
 }
 
-// CardCleared returns if the "card" edge to the Card entity was cleared.
+// CardCleared reports if the "card" edge to the Card entity was cleared.
 func (m *SpecMutation) CardCleared() bool {
 	return m.clearedcard
 }
@@ -11346,7 +11708,7 @@ func (m *UserMutation) ClearCard() {
 	m.clearedcard = true
 }
 
-// CardCleared returns if the "card" edge to the Card entity was cleared.
+// CardCleared reports if the "card" edge to the Card entity was cleared.
 func (m *UserMutation) CardCleared() bool {
 	return m.clearedcard
 }
@@ -11390,7 +11752,7 @@ func (m *UserMutation) ClearPets() {
 	m.clearedpets = true
 }
 
-// PetsCleared returns if the "pets" edge to the Pet entity was cleared.
+// PetsCleared reports if the "pets" edge to the Pet entity was cleared.
 func (m *UserMutation) PetsCleared() bool {
 	return m.clearedpets
 }
@@ -11443,7 +11805,7 @@ func (m *UserMutation) ClearFiles() {
 	m.clearedfiles = true
 }
 
-// FilesCleared returns if the "files" edge to the File entity was cleared.
+// FilesCleared reports if the "files" edge to the File entity was cleared.
 func (m *UserMutation) FilesCleared() bool {
 	return m.clearedfiles
 }
@@ -11496,7 +11858,7 @@ func (m *UserMutation) ClearGroups() {
 	m.clearedgroups = true
 }
 
-// GroupsCleared returns if the "groups" edge to the Group entity was cleared.
+// GroupsCleared reports if the "groups" edge to the Group entity was cleared.
 func (m *UserMutation) GroupsCleared() bool {
 	return m.clearedgroups
 }
@@ -11549,7 +11911,7 @@ func (m *UserMutation) ClearFriends() {
 	m.clearedfriends = true
 }
 
-// FriendsCleared returns if the "friends" edge to the User entity was cleared.
+// FriendsCleared reports if the "friends" edge to the User entity was cleared.
 func (m *UserMutation) FriendsCleared() bool {
 	return m.clearedfriends
 }
@@ -11602,7 +11964,7 @@ func (m *UserMutation) ClearFollowers() {
 	m.clearedfollowers = true
 }
 
-// FollowersCleared returns if the "followers" edge to the User entity was cleared.
+// FollowersCleared reports if the "followers" edge to the User entity was cleared.
 func (m *UserMutation) FollowersCleared() bool {
 	return m.clearedfollowers
 }
@@ -11655,7 +12017,7 @@ func (m *UserMutation) ClearFollowing() {
 	m.clearedfollowing = true
 }
 
-// FollowingCleared returns if the "following" edge to the User entity was cleared.
+// FollowingCleared reports if the "following" edge to the User entity was cleared.
 func (m *UserMutation) FollowingCleared() bool {
 	return m.clearedfollowing
 }
@@ -11703,7 +12065,7 @@ func (m *UserMutation) ClearTeam() {
 	m.clearedteam = true
 }
 
-// TeamCleared returns if the "team" edge to the Pet entity was cleared.
+// TeamCleared reports if the "team" edge to the Pet entity was cleared.
 func (m *UserMutation) TeamCleared() bool {
 	return m.clearedteam
 }
@@ -11742,7 +12104,7 @@ func (m *UserMutation) ClearSpouse() {
 	m.clearedspouse = true
 }
 
-// SpouseCleared returns if the "spouse" edge to the User entity was cleared.
+// SpouseCleared reports if the "spouse" edge to the User entity was cleared.
 func (m *UserMutation) SpouseCleared() bool {
 	return m.clearedspouse
 }
@@ -11786,7 +12148,7 @@ func (m *UserMutation) ClearChildren() {
 	m.clearedchildren = true
 }
 
-// ChildrenCleared returns if the "children" edge to the User entity was cleared.
+// ChildrenCleared reports if the "children" edge to the User entity was cleared.
 func (m *UserMutation) ChildrenCleared() bool {
 	return m.clearedchildren
 }
@@ -11834,7 +12196,7 @@ func (m *UserMutation) ClearParent() {
 	m.clearedparent = true
 }
 
-// ParentCleared returns if the "parent" edge to the User entity was cleared.
+// ParentCleared reports if the "parent" edge to the User entity was cleared.
 func (m *UserMutation) ParentCleared() bool {
 	return m.clearedparent
 }

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/entc/integration/ent"
 	"entgo.io/ent/entc/integration/ent/enttest"
@@ -55,7 +56,6 @@ func TestSQLite(t *testing.T) {
 }
 
 func TestMySQL(t *testing.T) {
-	t.Parallel()
 	for version, port := range map[string]int{"56": 3306, "57": 3307, "8": 3308} {
 		addr := net.JoinHostPort("localhost", strconv.Itoa(port))
 		t.Run(version, func(t *testing.T) {
@@ -73,13 +73,18 @@ func TestMySQL(t *testing.T) {
 }
 
 func TestMaria(t *testing.T) {
-	client := enttest.Open(t, dialect.MySQL, "root:pass@tcp(localhost:4306)/test?parseTime=True", opts)
-	defer client.Close()
-	for _, tt := range tests {
-		name := runtime.FuncForPC(reflect.ValueOf(tt).Pointer()).Name()
-		t.Run(name[strings.LastIndex(name, ".")+1:], func(t *testing.T) {
-			drop(t, client)
-			tt(t, client)
+	for version, port := range map[string]int{"10.5": 4306, "10.2": 4307, "10.3": 4308} {
+		t.Run(version, func(t *testing.T) {
+			addr := net.JoinHostPort("localhost", strconv.Itoa(port))
+			client := enttest.Open(t, dialect.MySQL, fmt.Sprintf("root:pass@tcp(%s)/test?parseTime=True", addr), opts)
+			defer client.Close()
+			for _, tt := range tests {
+				name := runtime.FuncForPC(reflect.ValueOf(tt).Pointer()).Name()
+				t.Run(name[strings.LastIndex(name, ".")+1:], func(t *testing.T) {
+					drop(t, client)
+					tt(t, client)
+				})
+			}
 		})
 	}
 }
@@ -350,6 +355,40 @@ func Select(t *testing.T, client *ent.Client) {
 			require.Zero(f.Age)
 		}
 	}
+	a8m := client.User.Create().SetName("Ariel").SetNickname("a8m").SetAge(30).SaveX(ctx)
+	require.NotEmpty(a8m.ID)
+	require.NotEmpty(a8m.Age)
+	require.NotEmpty(a8m.Name)
+	require.NotEmpty(a8m.Nickname)
+	a8m = a8m.Update().SetAge(32).Select(user.FieldAge).SaveX(ctx)
+	require.NotEmpty(a8m.ID)
+	require.NotEmpty(a8m.Age)
+	require.Empty(a8m.Name)
+	require.Empty(a8m.Nickname)
+
+	pets := client.Pet.CreateBulk(
+		client.Pet.Create().SetName("a"),
+		client.Pet.Create().SetName("b"),
+		client.Pet.Create().SetName("c"),
+		client.Pet.Create().SetName("b"),
+	).SaveX(ctx)
+	client.User.Create().SetName("foo").SetAge(20).AddPets(pets[0], pets[1]).SaveX(ctx)
+	client.User.Create().SetName("bar").SetAge(20).AddPets(pets[2], pets[3]).SaveX(ctx)
+	names = client.Pet.Query().Order(ent.Asc(pet.FieldID)).Select(pet.FieldName).StringsX(ctx)
+	require.Equal([]string{"a", "b", "c", "b"}, names)
+	names = client.Pet.Query().Order(ent.Asc(pet.FieldName)).Select(pet.FieldName).StringsX(ctx)
+	require.Equal([]string{"a", "b", "b", "c"}, names)
+	names = client.Pet.Query().
+		Order(func(s *entsql.Selector) {
+			// Join with user table for ordering by owner-name
+			// and pet-name (edge + field ordering).
+			t := entsql.Table(user.Table)
+			s.Join(t).On(s.C(pet.OwnerColumn), t.C(user.FieldID))
+			s.OrderBy(t.C(user.FieldName), s.C(pet.FieldName))
+		}).
+		Select(pet.FieldName).
+		StringsX(ctx)
+	require.Equal([]string{"b", "c", "a", "b"}, names)
 }
 
 func Predicate(t *testing.T, client *ent.Client) {
@@ -644,11 +683,11 @@ func Relation(t *testing.T, client *ent.Client) {
 	_, err = client.Group.Query().GroupBy("unknown_field").String(ctx)
 	require.EqualError(err, "invalid field \"unknown_field\" for group-by")
 	_, err = client.User.Query().Order(ent.Asc("invalid")).Only(ctx)
-	require.EqualError(err, "invalid field \"invalid\" for ordering")
+	require.EqualError(err, "ent: unknown column \"invalid\" for table \"users\"")
 	_, err = client.User.Query().Order(ent.Asc("invalid")).QueryFollowing().Only(ctx)
-	require.EqualError(err, "invalid field \"invalid\" for ordering")
+	require.EqualError(err, "ent: unknown column \"invalid\" for table \"users\"")
 	_, err = client.User.Query().GroupBy("name").Aggregate(ent.Sum("invalid")).String(ctx)
-	require.EqualError(err, "invalid field \"invalid\" for grouping")
+	require.EqualError(err, "ent: unknown column \"invalid\" for table \"users\"")
 
 	t.Log("query using edge-with predicate")
 	require.Len(usr.QueryGroups().Where(group.HasInfoWith(groupinfo.Desc("group info"))).AllX(ctx), 1)
@@ -1226,6 +1265,15 @@ func EagerLoading(t *testing.T, client *ent.Client) {
 		require.Len(users[0].Edges.Groups, 2)
 		require.Len(users[0].Edges.Friends, 1)
 		require.Equal(alex.Name, users[0].Edges.Friends[0].Name)
+
+		require.Equal(alex.Name, users[1].Name)
+		require.Len(users[1].Edges.Groups, 1)
+		require.Equal(hub.Name, users[1].Edges.Groups[0].Name)
+
+		require.Equal(nati.Name, users[2].Name)
+		require.Len(users[2].Edges.Groups, 1)
+		require.Equal(lab.Name, users[2].Edges.Groups[0].Name)
+
 		g1, g2 := users[0].Edges.Groups[0], users[0].Edges.Groups[1]
 		require.Equal(lab.Name, g1.Name)
 		require.Equal(hub.Name, g2.Name)

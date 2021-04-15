@@ -55,8 +55,9 @@ var (
 			Format: pkgf("%s_delete.go"),
 		},
 		{
-			Name:   "query",
-			Format: pkgf("%s_query.go"),
+			Name:           "query",
+			Format:         pkgf("%s_query.go"),
+			ExtendPatterns: []string{"dialect/*/query/fields/additional/*"},
 		},
 		{
 			Name:   "model",
@@ -90,6 +91,7 @@ var (
 			Format: "client.go",
 			ExtendPatterns: []string{
 				"client/fields/additional/*",
+				"dialect/*/query/fields/init/*",
 			},
 		},
 		{
@@ -158,8 +160,12 @@ var (
 	}
 	// patterns for extending partial-templates (included by other templates).
 	partialPatterns = [...]string{
+		"config/*/*",
+		"create/additional/*",
+		"delete/additional/*",
 		"dialect/*/*/*/spec/*",
 		"dialect/*/*/spec/*",
+		"dialect/*/config/*/*",
 		"dialect/*/import/additional/*",
 		"dialect/*/query/selector/*",
 		"dialect/sql/model/additional/*",
@@ -171,6 +177,8 @@ var (
 		"import/additional/*",
 		"model/additional/*",
 		"model/comment/additional/*",
+		"update/additional/*",
+		"query/additional/*",
 	}
 	// templates holds the Go templates for the code generation.
 	templates *Template

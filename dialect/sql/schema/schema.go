@@ -139,6 +139,19 @@ func (t *Table) index(name string) (*Index, bool) {
 	return nil, false
 }
 
+// hasIndex reports if the table has at least one index that matches the given names.
+func (t *Table) hasIndex(names ...string) bool {
+	for i := range names {
+		if names[i] == "" {
+			continue
+		}
+		if _, ok := t.index(names[i]); ok {
+			return true
+		}
+	}
+	return false
+}
+
 // fk returns a table foreign-key by its symbol.
 // faster than map lookup for most cases.
 func (t *Table) fk(symbol string) (*ForeignKey, bool) {
@@ -258,31 +271,32 @@ func (c *Column) ScanDefault(value string) error {
 // Note that, in SQLite if a NOT NULL constraint is specified,
 // then the column must have a default value which not NULL.
 func (c *Column) defaultValue(b *sql.ColumnBuilder) {
-	// has default, and it's supported in the database level.
-	if c.Default != nil && c.supportDefault() {
-		attr := "DEFAULT "
-		switch v := c.Default.(type) {
-		case bool:
-			attr += strconv.FormatBool(v)
-		case string:
-			// Escape single quote by replacing each with 2.
-			attr += fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
-		default:
-			attr += fmt.Sprint(v)
-		}
-		b.Attr(attr)
+	if c.Default == nil || !c.supportDefault() {
+		return
 	}
+	// Has default and the database supports adding this default.
+	attr := fmt.Sprint(c.Default)
+	switch v := c.Default.(type) {
+	case bool:
+		attr = strconv.FormatBool(v)
+	case string:
+		if t := c.Type; t != field.TypeUUID && t != field.TypeTime {
+			// Escape single quote by replacing each with 2.
+			attr = fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
+		}
+	}
+	b.Attr("DEFAULT " + attr)
 }
 
 // supportDefault reports if the column type supports default value.
 func (c Column) supportDefault() bool {
-	switch {
-	case c.Type == field.TypeString || c.Type == field.TypeEnum:
+	switch t := c.Type; t {
+	case field.TypeString, field.TypeEnum:
 		return c.Size < 1<<16 // not a text.
-	case c.Type.Numeric(), c.Type == field.TypeBool:
+	case field.TypeBool, field.TypeTime, field.TypeUUID:
 		return true
 	default:
-		return false
+		return t.Numeric()
 	}
 }
 
@@ -303,22 +317,6 @@ func (c *Column) nullable(b *sql.ColumnBuilder) {
 		attr = "NOT " + attr
 	}
 	b.Attr(attr)
-}
-
-// defaultSize returns the default size for MySQL varchar type based
-// on column size, charset and table indexes, in order to avoid index
-// prefix key limit (767).
-func (c *Column) defaultSize(version string) int64 {
-	size := DefaultStringLen
-	switch {
-	// version is >= 5.7.
-	case compareVersions(version, "5.7.0") != -1:
-	// non-unique, or not part of any index (reaching the error 1071).
-	case !c.Unique && len(c.indexes) == 0:
-	default:
-		size = 191
-	}
-	return size
 }
 
 // scanTypeOr returns the scanning type or the given value.

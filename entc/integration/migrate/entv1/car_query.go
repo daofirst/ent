@@ -25,6 +25,7 @@ type CarQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Car
@@ -51,6 +52,13 @@ func (cq *CarQuery) Limit(limit int) *CarQuery {
 // Offset adds an offset step to the query.
 func (cq *CarQuery) Offset(offset int) *CarQuery {
 	cq.offset = &offset
+	return cq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (cq *CarQuery) Unique(unique bool) *CarQuery {
+	cq.unique = &unique
 	return cq
 }
 
@@ -357,11 +365,14 @@ func (cq *CarQuery) sqlAll(ctx context.Context) ([]*Car, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Car)
 		for i := range nodes {
-			fk := nodes[i].user_car
-			if fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].user_car == nil {
+				continue
 			}
+			fk := *nodes[i].user_car
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(user.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -408,6 +419,9 @@ func (cq *CarQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   cq.sql,
 		Unique: true,
 	}
+	if unique := cq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := cq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, car.FieldID)
@@ -433,7 +447,7 @@ func (cq *CarQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := cq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, car.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -452,7 +466,7 @@ func (cq *CarQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range cq.order {
-		p(selector, car.ValidColumn)
+		p(selector)
 	}
 	if offset := cq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -718,7 +732,7 @@ func (cgb *CarGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(cgb.fields)+len(cgb.fns))
 	columns = append(columns, cgb.fields...)
 	for _, fn := range cgb.fns {
-		columns = append(columns, fn(selector, car.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(cgb.fields...)
 }

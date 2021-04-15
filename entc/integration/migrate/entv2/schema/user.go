@@ -5,7 +5,10 @@
 package schema
 
 import (
+	"time"
+
 	"entgo.io/ent"
+	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
@@ -80,6 +83,12 @@ func (User) Fields() []ent.Field {
 		// remove the max-length constraint from varchar.
 		field.String("workplace").
 			Optional(),
+		// add a new column with generated values by the database.
+		field.Time("created_at").
+			Default(time.Now).
+			Annotations(&entsql.Annotation{
+				Default: "CURRENT_TIMESTAMP",
+			}),
 		// deleting the `address` column.
 	}
 }
@@ -91,10 +100,14 @@ func (User) Edges() []ent.Edge {
 		edge.To("car", Car.Type),
 		// New edges to added.
 		edge.To("pets", Pet.Type).
-			StorageKey(edge.Column("owner_id")).
+			StorageKey(edge.Column("owner_id"), edge.Symbol("user_pet_id")).
 			Unique(),
 		edge.To("friends", User.Type).
-			StorageKey(edge.Table("friends"), edge.Columns("user", "friend")),
+			StorageKey(
+				edge.Table("friends"),
+				edge.Columns("user", "friend"),
+				edge.Symbols("user_friend_id1", "user_friend_id2"),
+			),
 	}
 }
 
@@ -113,7 +126,6 @@ type Car struct {
 
 func (Car) Edges() []ent.Edge {
 	return []ent.Edge{
-		// Car now can have more than 1 owner (not unique anymore).
 		edge.From("owner", User.Type).
 			Ref("car").
 			Unique(),

@@ -6,7 +6,6 @@ package schema
 
 import (
 	"context"
-	"database/sql/driver"
 	"fmt"
 	"math"
 	"strconv"
@@ -244,7 +243,7 @@ func (d *MySQL) cType(c *Column) (t string) {
 	case field.TypeString:
 		size := c.Size
 		if size == 0 {
-			size = c.defaultSize(d.version)
+			size = d.defaultSize(c)
 		}
 		if size <= math.MaxUint16 {
 			t = fmt.Sprintf("varchar(%d)", size)
@@ -558,26 +557,22 @@ func (d *MySQL) alterColumns(table string, add, modify, drop []*Column) sql.Quer
 
 // normalizeJSON normalize MariaDB longtext columns to type JSON.
 func (d *MySQL) normalizeJSON(ctx context.Context, tx dialect.Tx, t *Table) error {
-	var (
-		names   []driver.Value
-		columns = make(map[string]*Column)
-	)
+	columns := make(map[string]*Column)
 	for _, c := range t.Columns {
 		if c.typ == "longtext" {
 			columns[c.Name] = c
-			names = append(names, c.Name)
 		}
 	}
-	if len(names) == 0 {
+	if len(columns) == 0 {
 		return nil
 	}
 	rows := &sql.Rows{}
-	query, args := sql.Select("CONSTRAINT_NAME", "CHECK_CLAUSE").
+	query, args := sql.Select("CONSTRAINT_NAME").
 		From(sql.Table("CHECK_CONSTRAINTS").Schema("INFORMATION_SCHEMA")).
 		Where(sql.And(
 			d.matchSchema("CONSTRAINT_SCHEMA"),
 			sql.EQ("TABLE_NAME", t.Name),
-			sql.InValues("CONSTRAINT_NAME", names...),
+			sql.Like("CHECK_CLAUSE", "json_valid(%)"),
 		)).
 		Query()
 	if err := tx.Query(ctx, query, args, rows); err != nil {
@@ -585,21 +580,23 @@ func (d *MySQL) normalizeJSON(ctx context.Context, tx dialect.Tx, t *Table) erro
 	}
 	// Call Close in cases of failures (Close is idempotent).
 	defer rows.Close()
-	for rows.Next() {
-		var name, check string
-		if err := rows.Scan(&name, &check); err != nil {
-			return fmt.Errorf("mysql: scan table constraints")
-		}
-		c, ok := columns[name]
-		if !ok || !strings.HasPrefix(check, "json_valid") {
-			continue
-		}
-		c.Type = field.TypeJSON
+	names := make([]string, 0, len(columns))
+	if err := sql.ScanSlice(rows, &names); err != nil {
+		return fmt.Errorf("mysql: scan table constraints: %w", err)
 	}
 	if err := rows.Err(); err != nil {
 		return err
 	}
-	return rows.Close()
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, name := range names {
+		c, ok := columns[name]
+		if ok {
+			c.Type = field.TypeJSON
+		}
+	}
+	return nil
 }
 
 // mariadb reports if the migration runs on MariaDB and returns the semver string.
@@ -658,4 +655,31 @@ func (d *MySQL) fkNames(ctx context.Context, tx dialect.Tx, table, column string
 		return nil, err
 	}
 	return names, nil
+}
+
+// defaultSize returns the default size for MySQL/MariaDB varchar type
+// based on column size, charset and table indexes, in order to avoid
+// index prefix key limit (767) for older versions of MySQL/MariaDB.
+func (d *MySQL) defaultSize(c *Column) int64 {
+	size := DefaultStringLen
+	version, checked := d.version, "5.7.0"
+	if v, ok := d.mariadb(); ok {
+		version, checked = v, "10.2.2"
+	}
+	switch {
+	// Version is >= 5.7 for MySQL, or >= 10.2.2 for MariaDB.
+	case compareVersions(version, checked) != -1:
+	// Column is non-unique, or not part of any index (reaching
+	// the error 1071).
+	case !c.Unique && len(c.indexes) == 0:
+	default:
+		size = 191
+	}
+	return size
+}
+
+// needsConversion reports if column "old" needs to be converted
+// (by table altering) to column "new".
+func (d *MySQL) needsConversion(old, new *Column) bool {
+	return d.cType(old) != d.cType(new)
 }

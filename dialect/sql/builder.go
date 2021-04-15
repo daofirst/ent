@@ -619,9 +619,15 @@ type InsertBuilder struct {
 	table     string
 	schema    string
 	columns   []string
-	defaults  string
+	defaults  bool
 	returning []string
 	values    [][]interface{}
+
+	// Upsert
+	conflictColumns []string
+	updateColumns   []string
+	updateValues    []interface{}
+	onConflictOp    ConflictResolutionOp
 }
 
 // Insert creates a builder for the `INSERT INTO` statement.
@@ -651,9 +657,40 @@ func (i *InsertBuilder) Set(column string, v interface{}) *InsertBuilder {
 	return i
 }
 
-// Columns sets the columns of the insert statement.
+// Columns appends columns to the INSERT statement.
 func (i *InsertBuilder) Columns(columns ...string) *InsertBuilder {
 	i.columns = append(i.columns, columns...)
+	return i
+}
+
+// ConflictColumns sets the unique constraints that trigger the conflict resolution on insert
+// to perform an upsert operation. The columns must have a unqiue constraint applied to trigger this behaviour.
+func (i *InsertBuilder) ConflictColumns(values ...string) *InsertBuilder {
+	i.conflictColumns = append(i.conflictColumns, values...)
+	return i
+}
+
+// A ConflictResolutionOp represents a possible action to take when an insert conflict occurrs.
+type ConflictResolutionOp int
+
+// Conflict Operations
+const (
+	OpResolveWithNewValues       ConflictResolutionOp = iota // Update conflict columns using EXCLUDED.column (postres) or c = VALUES(c) (mysql)
+	OpResolveWithIgnore                                      // Sets each column to itself to force an update and return the ID, otherwise does not change any data. This may still trigger update hooks in the database.
+	OpResolveWithAlternateValues                             // Update using provided values across all rows.
+)
+
+// OnConflict sets the conflict resolution behaviour when a unique constraint
+// violation occurrs, triggering an upsert.
+func (i *InsertBuilder) OnConflict(op ConflictResolutionOp) *InsertBuilder {
+	i.onConflictOp = op
+	return i
+}
+
+// UpdateSet sets a column and a its value for use on upsert
+func (i *InsertBuilder) UpdateSet(column string, v interface{}) *InsertBuilder {
+	i.updateColumns = append(i.updateColumns, column)
+	i.updateValues = append(i.updateValues, v)
 	return i
 }
 
@@ -665,13 +702,17 @@ func (i *InsertBuilder) Values(values ...interface{}) *InsertBuilder {
 
 // Default sets the default values clause based on the dialect type.
 func (i *InsertBuilder) Default() *InsertBuilder {
+	i.defaults = true
+	return i
+}
+
+func (i *InsertBuilder) writeDefault() {
 	switch i.Dialect() {
 	case dialect.MySQL:
-		i.defaults = "VALUES ()"
+		i.WriteString("VALUES ()")
 	case dialect.SQLite, dialect.Postgres:
-		i.defaults = "DEFAULT VALUES"
+		i.WriteString("DEFAULT VALUES")
 	}
-	return i
 }
 
 // Returning adds the `RETURNING` clause to the insert statement. PostgreSQL only.
@@ -685,27 +726,94 @@ func (i *InsertBuilder) Query() (string, []interface{}) {
 	i.WriteString("INSERT INTO ")
 	i.writeSchema(i.schema)
 	i.Ident(i.table).Pad()
-	if i.defaults != "" && len(i.columns) == 0 {
-		i.WriteString(i.defaults)
+	if i.defaults && len(i.columns) == 0 {
+		i.writeDefault()
 	} else {
-		i.Nested(func(b *Builder) {
-			b.IdentComma(i.columns...)
-		})
+		i.WriteByte('(').IdentComma(i.columns...).WriteByte(')')
 		i.WriteString(" VALUES ")
 		for j, v := range i.values {
 			if j > 0 {
 				i.Comma()
 			}
-			i.Nested(func(b *Builder) {
-				b.Args(v...)
-			})
+			i.WriteByte('(').Args(v...).WriteByte(')')
 		}
 	}
+
+	if len(i.conflictColumns) > 0 {
+		i.buildConflictHandling()
+	}
+
 	if len(i.returning) > 0 && i.postgres() {
 		i.WriteString(" RETURNING ")
 		i.IdentComma(i.returning...)
 	}
 	return i.String(), i.args
+}
+
+func (i *InsertBuilder) buildConflictHandling() {
+	switch i.Dialect() {
+	case dialect.Postgres, dialect.SQLite:
+		i.Pad().
+			WriteString("ON CONFLICT").
+			Pad().
+			Nested(func(b *Builder) {
+				b.IdentComma(i.conflictColumns...)
+			}).
+			Pad().
+			WriteString("DO UPDATE SET ")
+
+		switch i.onConflictOp {
+		case OpResolveWithNewValues:
+			for j, c := range i.columns {
+				if j > 0 {
+					i.Comma()
+				}
+				i.Ident(c).WriteOp(OpEQ).Ident("excluded").WriteByte('.').Ident(c)
+			}
+		case OpResolveWithIgnore:
+			writeIgnoreValues(i)
+		case OpResolveWithAlternateValues:
+			writeUpdateValues(i, i.updateColumns, i.updateValues)
+		}
+
+	case dialect.MySQL:
+		i.Pad().WriteString("ON DUPLICATE KEY UPDATE ")
+
+		switch i.onConflictOp {
+		case OpResolveWithIgnore:
+			writeIgnoreValues(i)
+		case OpResolveWithNewValues:
+			for j, c := range i.columns {
+				if j > 0 {
+					i.Comma()
+				}
+				// update column with the value we tried to insert
+				i.Ident(c).WriteOp(OpEQ).WriteString("VALUES").WriteByte('(').Ident(c).WriteByte(')')
+			}
+		case OpResolveWithAlternateValues:
+			writeUpdateValues(i, i.updateColumns, i.updateValues)
+		}
+	}
+}
+
+func writeUpdateValues(builder *InsertBuilder, columns []string, values []interface{}) {
+	for i, c := range columns {
+		if i > 0 {
+			builder.Comma()
+		}
+		builder.Ident(c).WriteString(" = ").Arg(builder.updateValues[i])
+	}
+}
+
+// writeIgnoreValues ignores conflicts by setting each column to itself e.g. "c" = "c",
+// performimg an update without changing any values so that it returns the record ID.
+func writeIgnoreValues(builder *InsertBuilder) {
+	for j, c := range builder.columns {
+		if j > 0 {
+			builder.Comma()
+		}
+		builder.Ident(c).WriteOp(OpEQ).Ident(c)
+	}
 }
 
 // UpdateBuilder is a builder for `UPDATE` statement.
@@ -946,6 +1054,14 @@ func (p *Predicate) Not() *Predicate {
 	})
 }
 
+func (p *Predicate) columnsOp(col1, col2 string, op Op) *Predicate {
+	return p.Append(func(b *Builder) {
+		b.Ident(col1)
+		b.WriteOp(op)
+		b.Ident(col2)
+	})
+}
+
 // And combines all given predicates with AND between them.
 func And(preds ...*Predicate) *Predicate {
 	p := P()
@@ -968,6 +1084,16 @@ func (p *Predicate) EQ(col string, arg interface{}) *Predicate {
 	})
 }
 
+// ColumnsEQ appends a "=" predicate between 2 columns.
+func ColumnsEQ(col1 string, col2 string) *Predicate {
+	return P().ColumnsEQ(col1, col2)
+}
+
+// ColumnsEQ appends a "=" predicate between 2 columns.
+func (p *Predicate) ColumnsEQ(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpEQ)
+}
+
 // NEQ returns a "<>" predicate.
 func NEQ(col string, value interface{}) *Predicate {
 	return P().NEQ(col, value)
@@ -980,6 +1106,16 @@ func (p *Predicate) NEQ(col string, arg interface{}) *Predicate {
 		b.WriteOp(OpNEQ)
 		b.Arg(arg)
 	})
+}
+
+// ColumnsNEQ appends a "<>" predicate between 2 columns.
+func ColumnsNEQ(col1 string, col2 string) *Predicate {
+	return P().ColumnsNEQ(col1, col2)
+}
+
+// ColumnsNEQ appends a "<>" predicate between 2 columns.
+func (p *Predicate) ColumnsNEQ(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpNEQ)
 }
 
 // LT returns a "<" predicate.
@@ -996,6 +1132,16 @@ func (p *Predicate) LT(col string, arg interface{}) *Predicate {
 	})
 }
 
+// ColumnsLT appends a "<" predicate between 2 columns.
+func ColumnsLT(col1 string, col2 string) *Predicate {
+	return P().ColumnsLT(col1, col2)
+}
+
+// ColumnsLT appends a "<" predicate between 2 columns.
+func (p *Predicate) ColumnsLT(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpLT)
+}
+
 // LTE returns a "<=" predicate.
 func LTE(col string, value interface{}) *Predicate {
 	return P().LTE(col, value)
@@ -1008,6 +1154,16 @@ func (p *Predicate) LTE(col string, arg interface{}) *Predicate {
 		p.WriteOp(OpLTE)
 		b.Arg(arg)
 	})
+}
+
+// ColumnsLTE appends a "<=" predicate between 2 columns.
+func ColumnsLTE(col1 string, col2 string) *Predicate {
+	return P().ColumnsLTE(col1, col2)
+}
+
+// ColumnsLTE appends a "<=" predicate between 2 columns.
+func (p *Predicate) ColumnsLTE(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpLTE)
 }
 
 // GT returns a ">" predicate.
@@ -1024,6 +1180,16 @@ func (p *Predicate) GT(col string, arg interface{}) *Predicate {
 	})
 }
 
+// ColumnsGT appends a ">" predicate between 2 columns.
+func ColumnsGT(col1 string, col2 string) *Predicate {
+	return P().ColumnsGT(col1, col2)
+}
+
+// ColumnsGT appends a ">" predicate between 2 columns.
+func (p *Predicate) ColumnsGT(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpGT)
+}
+
 // GTE returns a ">=" predicate.
 func GTE(col string, value interface{}) *Predicate {
 	return P().GTE(col, value)
@@ -1036,6 +1202,16 @@ func (p *Predicate) GTE(col string, arg interface{}) *Predicate {
 		p.WriteOp(OpGTE)
 		b.Arg(arg)
 	})
+}
+
+// ColumnsGTE appends a ">=" predicate between 2 columns.
+func ColumnsGTE(col1 string, col2 string) *Predicate {
+	return P().ColumnsGTE(col1, col2)
+}
+
+// ColumnsGTE appends a ">=" predicate between 2 columns.
+func (p *Predicate) ColumnsGTE(col1 string, col2 string) *Predicate {
+	return p.columnsOp(col1, col2, OpGTE)
 }
 
 // NotNull returns the `IS NOT NULL` predicate.
@@ -1670,6 +1846,11 @@ func (s *Selector) Table() *SelectTable {
 	return s.from.(*SelectTable)
 }
 
+// TableName returns the name of the selected table.
+func (s *Selector) TableName() string {
+	return s.Table().name
+}
+
 // Join appends a `JOIN` clause to the statement.
 func (s *Selector) Join(t TableView) *Selector {
 	return s.join("JOIN", t)
@@ -2056,6 +2237,7 @@ type Builder struct {
 // Quote quotes the given identifier with the characters based
 // on the configured dialect. It defaults to "`".
 func (b *Builder) Quote(ident string) string {
+	quote := "`"
 	switch {
 	case b.postgres():
 		// If it was quoted with the wrong
@@ -2063,13 +2245,12 @@ func (b *Builder) Quote(ident string) string {
 		if strings.Contains(ident, "`") {
 			return strings.ReplaceAll(ident, "`", `"`)
 		}
-		return strconv.Quote(ident)
+		quote = `"`
 	// An identifier for unknown dialect.
 	case b.dialect == "" && strings.ContainsAny(ident, "`\""):
 		return ident
-	default:
-		return fmt.Sprintf("`%s`", ident)
 	}
+	return quote + ident + quote
 }
 
 // Ident appends the given string as an identifier.
@@ -2242,14 +2423,12 @@ func (b *Builder) Args(a ...interface{}) *Builder {
 
 // Comma adds a comma to the query.
 func (b *Builder) Comma() *Builder {
-	b.WriteString(", ")
-	return b
+	return b.WriteString(", ")
 }
 
 // Pad adds a space to the query.
 func (b *Builder) Pad() *Builder {
-	b.WriteString(" ")
-	return b
+	return b.WriteByte(' ')
 }
 
 // Join joins a list of Queries to the builder.

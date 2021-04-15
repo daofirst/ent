@@ -49,7 +49,7 @@ type (
 		foreignKeys map[string]struct{}
 		// Annotations that were defined for the field in the schema.
 		// The mapping is from the Annotation.Name() to a JSON decoded object.
-		Annotations map[string]interface{}
+		Annotations Annotations
 	}
 
 	// Field holds the information of a type field used for the templates.
@@ -85,7 +85,7 @@ type (
 		UserDefined bool
 		// Annotations that were defined for the field in the schema.
 		// The mapping is from the Annotation.Name() to a JSON decoded object.
-		Annotations map[string]interface{}
+		Annotations Annotations
 		// referenced foreign-key.
 		fk *ForeignKey
 	}
@@ -124,7 +124,7 @@ type (
 		Bidi bool
 		// Annotations that were defined for the edge in the schema.
 		// The mapping is from the Annotation.Name() to a JSON decoded object.
-		Annotations map[string]interface{}
+		Annotations Annotations
 	}
 
 	// Relation holds the relational database information for edges.
@@ -956,6 +956,17 @@ func (f Field) MutationSet() string {
 	return name
 }
 
+// MutationClear returns the method name for clearing the field value.
+func (f Field) MutationClear() string {
+	return "Clear" + f.StructField()
+}
+
+// MutationCleared returns the method name for indicating if the field
+// was cleared in the mutation.
+func (f Field) MutationCleared() string {
+	return f.StructField() + "Cleared"
+}
+
 // IsBool returns true if the field is a bool field.
 func (f Field) IsBool() bool { return f.Type != nil && f.Type.Type == field.TypeBool }
 
@@ -979,9 +990,6 @@ func (f Field) IsInt() bool { return f.Type != nil && f.Type.Type == field.TypeI
 
 // IsEnum returns true if the field is an enum field.
 func (f Field) IsEnum() bool { return f.Type != nil && f.Type.Type == field.TypeEnum }
-
-// IsAddable returns true if the field is an enum field.
-func (f Field) IsAddable() bool { return f.Type != nil && f.Type.Type == field.TypeEnum }
 
 // IsEdgeField reports if the given field is an edge-field (i.e. a foreign-key)
 // that was referenced by one of the edges).
@@ -1009,10 +1017,16 @@ func (f Field) Comment() string {
 	return ""
 }
 
+// NillableValue reports if the field holds a Go value (not a pointer), but the field is nillable.
+// It's used by the templates to prefix values with pointer operators (e.g. &intValue or *intValue).
+func (f Field) NillableValue() bool {
+	return f.Nillable && !f.Type.RType.IsPtr()
+}
+
 // NullType returns the sql null-type for optional and nullable fields.
 func (f Field) NullType() string {
 	if f.Type.ValueScanner() {
-		return f.Type.String()
+		return f.Type.RType.String()
 	}
 	switch f.Type.Type {
 	case field.TypeJSON, field.TypeBytes:
@@ -1052,8 +1066,8 @@ func (f Field) NullTypeField(rec string) string {
 	return expr
 }
 
-// Column returns the table column. It sets it as a primary key (auto_increment) in case of ID field, unless stated
-// otherwise.
+// Column returns the table column. It sets it as a primary key (auto_increment)
+// in case of ID field, unless stated otherwise.
 func (f Field) Column() *schema.Column {
 	c := &schema.Column{
 		Name:     f.StorageKey(),
@@ -1070,6 +1084,11 @@ func (f Field) Column() *schema.Column {
 		if s, ok := f.DefaultValue().(string); ok {
 			c.Default = strconv.Quote(s)
 		}
+	}
+	// Override the default-value defined in the
+	// schema if it was provided by an annotation.
+	if ant := f.EntSQL(); ant != nil && ant.Default != "" {
+		c.Default = strconv.Quote(ant.Default)
 	}
 	if f.def != nil {
 		c.SchemaType = f.def.SchemaType
@@ -1142,9 +1161,12 @@ func (f Field) ConvertedToBasic() bool {
 }
 
 var (
-	nullBoolType   = reflect.TypeOf(sql.NullBool{})
-	nullTimeType   = reflect.TypeOf(sql.NullTime{})
-	nullStringType = reflect.TypeOf(sql.NullString{})
+	nullBoolType    = reflect.TypeOf(sql.NullBool{})
+	nullBoolPType   = reflect.TypeOf((*sql.NullBool)(nil))
+	nullTimeType    = reflect.TypeOf(sql.NullTime{})
+	nullTimePType   = reflect.TypeOf((*sql.NullTime)(nil))
+	nullStringType  = reflect.TypeOf(sql.NullString{})
+	nullStringPType = reflect.TypeOf((*sql.NullString)(nil))
 )
 
 // BasicType returns a Go expression for the given identifier
@@ -1166,7 +1188,7 @@ func (f Field) BasicType(ident string) (expr string) {
 		switch {
 		case rt.Kind == reflect.Bool:
 			expr = fmt.Sprintf("bool(%s)", ident)
-		case rt.TypeEqual(nullBoolType):
+		case rt.TypeEqual(nullBoolType) || rt.TypeEqual(nullBoolPType):
 			expr = fmt.Sprintf("%s.Bool", ident)
 		}
 	case field.TypeBytes:
@@ -1175,7 +1197,7 @@ func (f Field) BasicType(ident string) (expr string) {
 		}
 	case field.TypeTime:
 		switch {
-		case rt.TypeEqual(nullTimeType):
+		case rt.TypeEqual(nullTimeType) || rt.TypeEqual(nullTimePType):
 			expr = fmt.Sprintf("%s.Time", ident)
 		case rt.Kind == reflect.Struct:
 			expr = fmt.Sprintf("time.Time(%s)", ident)
@@ -1186,7 +1208,7 @@ func (f Field) BasicType(ident string) (expr string) {
 			expr = fmt.Sprintf("string(%s)", ident)
 		case t.Stringer():
 			expr = fmt.Sprintf("%s.String()", ident)
-		case rt.TypeEqual(nullStringType):
+		case rt.TypeEqual(nullStringType) || rt.TypeEqual(nullStringPType):
 			expr = fmt.Sprintf("%s.String", ident)
 		}
 	default:
@@ -1337,7 +1359,10 @@ func (e *Edge) ForeignKey() (*ForeignKey, error) {
 //
 // Note that the zero value is returned if no field was defined in the schema.
 func (e Edge) Field() *Field {
-	if fk, err := e.ForeignKey(); err == nil {
+	if !e.OwnFK() {
+		return nil
+	}
+	if fk, err := e.ForeignKey(); err == nil && fk.Field.IsEdgeField() {
 		return fk.Field
 	}
 	return nil
@@ -1383,6 +1408,11 @@ func (e Edge) MutationClear() string {
 		name += "Edge"
 	}
 	return name
+}
+
+// MutationRemove returns the method name for removing edge ids.
+func (e Edge) MutationRemove() string {
+	return "Remove" + pascal(rules.Singularize(e.Name)) + "IDs"
 }
 
 // MutationCleared returns the method name for indicating if the edge
@@ -1438,6 +1468,11 @@ func (e Edge) StorageKey() (*edge.StorageKey, error) {
 		return nil, fmt.Errorf("multiple storage-keys defined for edge %q<->%q", e.Name, assoc.Name)
 	}
 	return assoc.def.StorageKey, nil
+}
+
+// EntSQL returns the EntSQL annotation if exists.
+func (e Edge) EntSQL() *entsql.Annotation {
+	return entsqlAnnotate(e.Annotations)
 }
 
 // Column returns the first element from the columns slice.

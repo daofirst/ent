@@ -6,6 +6,7 @@ package field
 
 import (
 	"fmt"
+	"path"
 	"reflect"
 	"strings"
 )
@@ -122,10 +123,20 @@ func (t TypeInfo) ValueScanner() bool {
 	return t.RType.implements(valueScannerType)
 }
 
+// ValueScanner indicates if this type implements the driver.Valuer interface.
+func (t TypeInfo) Valuer() bool {
+	return t.RType.implements(valuerType)
+}
+
 // Comparable reports whether values of this type are comparable.
 func (t TypeInfo) Comparable() bool {
 	switch t.Type {
 	case TypeBool, TypeTime, TypeUUID, TypeEnum, TypeString:
+		return true
+	case TypeOther:
+		// Always accept custom types as comparable on the database side.
+		// In the future, we should consider adding an interface to let
+		// custom types tell if they are comparable or not (see #1304).
 		return true
 	default:
 		return t.Numeric()
@@ -184,10 +195,23 @@ type RType struct {
 	rtype reflect.Type
 }
 
-// TypeEqual tests if the RType is equal to given reflect.Type.
+// TypeEqual reports if the underlying type is equal to the RType (after pointer indirections).
 func (r *RType) TypeEqual(t reflect.Type) bool {
-	t = indirect(t)
-	return r.Name == t.Name() && r.Kind == t.Kind() && r.PkgPath == t.PkgPath()
+	tv := indirect(t)
+	return r.Name == tv.Name() && r.Kind == t.Kind() && r.PkgPath == tv.PkgPath()
+}
+
+// RType returns the string value of the indirect reflect.Type.
+func (r *RType) String() string {
+	if r.rtype != nil {
+		return r.rtype.String()
+	}
+	return path.Base(r.PkgPath) + "." + r.Name
+}
+
+// IsPtr reports if the reflect-type is a pointer type.
+func (r *RType) IsPtr() bool {
+	return r != nil && r.Kind == reflect.Ptr
 }
 
 func (r *RType) implements(typ reflect.Type) bool {

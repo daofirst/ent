@@ -8,7 +8,7 @@ title: Fields
 Fields (or properties) in the schema are the attributes of the node. For example, a `User`
 with 4 fields: `age`, `name`, `username` and `created_at`:
 
-![re-fields-properties](https://entgo.io/assets/er_fields_properties.png)
+![re-fields-properties](https://entgo.io/images/assets/er_fields_properties.png)
 
 Fields are returned from the schema using the `Fields` method. For example:
 
@@ -286,6 +286,24 @@ func (User) Fields() []ent.Field {
 			Default("unknown"),
 		field.String("cuid").
 			DefaultFunc(cuid.New),
+	}
+}
+```
+
+SQL-specific expressions like function calls can be added to default value configuration using the
+[`entsql.Annotation`](https://pkg.go.dev/entgo.io/ent@master/dialect/entsql#Annotation):
+
+```go
+// Fields of the User.
+func (User) Fields() []ent.Field {
+	return []ent.Field{
+		// Add a new field with CURRENT_TIMESTAMP
+		// as a default value to all previous rows.
+		field.Time("created_at").
+			Default(time.Now).
+			Annotations(&entsql.Annotation{
+				Default: "CURRENT_TIMESTAMP",
+			}),
 	}
 }
 ```

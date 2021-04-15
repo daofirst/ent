@@ -25,6 +25,7 @@ type PostQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Post
@@ -50,6 +51,13 @@ func (pq *PostQuery) Limit(limit int) *PostQuery {
 // Offset adds an offset step to the query.
 func (pq *PostQuery) Offset(offset int) *PostQuery {
 	pq.offset = &offset
+	return pq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (pq *PostQuery) Unique(unique bool) *PostQuery {
+	pq.unique = &unique
 	return pq
 }
 
@@ -373,11 +381,14 @@ func (pq *PostQuery) sqlAll(ctx context.Context) ([]*Post, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Post)
 		for i := range nodes {
-			fk := nodes[i].AuthorID
-			if fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].AuthorID == nil {
+				continue
 			}
+			fk := *nodes[i].AuthorID
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(user.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -424,6 +435,9 @@ func (pq *PostQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   pq.sql,
 		Unique: true,
 	}
+	if unique := pq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := pq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, post.FieldID)
@@ -449,7 +463,7 @@ func (pq *PostQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := pq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, post.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -468,7 +482,7 @@ func (pq *PostQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range pq.order {
-		p(selector, post.ValidColumn)
+		p(selector)
 	}
 	if offset := pq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -734,7 +748,7 @@ func (pgb *PostGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(pgb.fields)+len(pgb.fns))
 	columns = append(columns, pgb.fields...)
 	for _, fn := range pgb.fns {
-		columns = append(columns, fn(selector, post.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(pgb.fields...)
 }

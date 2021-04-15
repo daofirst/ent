@@ -37,9 +37,16 @@
     ]
   },
   "tutorial": {
-    "Tutorial": [
+    "First Steps": [
       "tutorial-setup",
       "tutorial-todo-crud"
+    ],
+    "GraphQL Basics": [
+      "tutorial-todo-gql",
+      "tutorial-todo-gql-node",
+      "tutorial-todo-gql-paginate",
+      "tutorial-todo-gql-field-collection",
+      "tutorial-todo-gql-tx-mutation"
     ]
   }
 }

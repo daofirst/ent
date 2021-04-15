@@ -4,6 +4,8 @@ This source code is licensed under the Apache 2.0 license found
 in the LICENSE file in the root directory of this source tree.
 */}}
 
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
 {{ define "mutation" }}
 
 {{ $pkg := base $.Config.Package }}
@@ -180,7 +182,7 @@ func (m *{{ $mutation }}) ID() (id {{ $n.ID.Type }}, exists bool) {
 	// {{ $f.MutationGetOld }} returns the old "{{ $f.Name }}" field's value of the {{ $n.Name }} entity.
 	// If the {{ $n.Name }} object wasn't provided to the builder, the object is fetched from the database.
 	// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-	func (m *{{ $mutation }}) {{ $f.MutationGetOld }}(ctx context.Context) (v {{ if $f.Nillable }}*{{ end }}{{ $f.Type }}, err error) {
+	func (m *{{ $mutation }}) {{ $f.MutationGetOld }}(ctx context.Context) (v {{ if $f.NillableValue }}*{{ end }}{{ $f.Type }}, err error) {
 		if !m.op.Is(OpUpdateOne) {
 			return v, fmt.Errorf("{{ $f.MutationGetOld }} is only allowed on UpdateOne operations")
 		}
@@ -216,7 +218,7 @@ func (m *{{ $mutation }}) ID() (id {{ $n.ID.Type }}, exists bool) {
 	{{ end }}
 
 	{{ if $f.Optional }}
-		{{ $func := print "Clear" $f.StructField }}
+		{{ $func := $f.MutationClear }}
 		// {{ $func }} clears the value of the "{{ $f.Name }}" field.
 		func (m *{{ $mutation }}) {{ $func }}() {
 			m.{{ $f.BuilderField }} = nil
@@ -226,7 +228,7 @@ func (m *{{ $mutation }}) ID() (id {{ $n.ID.Type }}, exists bool) {
 			m.clearedFields[{{ $const }}] = struct{}{}
 		}
 
-		{{ $func = print $f.StructField "Cleared" }}
+		{{ $func = $f.MutationCleared }}
 		// {{ $func }} returns if the "{{ $f.Name }}" field was cleared in this mutation.
 		func (m *{{ $mutation }}) {{ $func }}() bool {
 			_, ok := m.clearedFields[{{ $const }}]
@@ -275,16 +277,15 @@ func (m *{{ $mutation }}) ID() (id {{ $n.ID.Type }}, exists bool) {
 	}
 
 	{{ $func = $e.MutationCleared }}
-	// {{ $func }} returns if the "{{ $e.Name }}" edge to the {{ $e.Type.Name }} entity was cleared.
+	// {{ $func }} reports if the "{{ $e.Name }}" edge to the {{ $e.Type.Name }} entity was cleared.
 	func (m *{{ $mutation }}) {{ $func }}() bool {
-		return m.cleared{{ $e.BuilderField }}
+		return {{ with $e.Field }}{{ if .Optional }}m.{{ .MutationCleared }}() || {{ end }}{{ end }}m.cleared{{ $e.BuilderField }}
 	}
 
 	{{ if not $e.Unique }}
 		{{ $p := lower (printf "%.1s" $e.Type.Name) }}
-		{{ $idsFunc := print "Remove" (singular $e.Name | pascal) "IDs" }}
-		// {{ $idsFunc }} removes the "{{ $e.Name }}" edge to the {{ $e.Type.Name }} entity by IDs.
-		func (m *{{ $mutation }}) {{ $idsFunc }}(ids ...{{ $e.Type.ID.Type }}) {
+		// {{ $e.MutationRemove }} removes the "{{ $e.Name }}" edge to the {{ $e.Type.Name }} entity by IDs.
+		func (m *{{ $mutation }}) {{ $e.MutationRemove }}(ids ...{{ $e.Type.ID.Type }}) {
 			if m.removed{{ $e.BuilderField }} == nil {
 				m.removed{{ $e.BuilderField }} = make(map[{{ $e.Type.ID.Type }}]struct{})
 			}

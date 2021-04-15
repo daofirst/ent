@@ -4,6 +4,8 @@ This source code is licensed under the Apache 2.0 license found
 in the LICENSE file in the root directory of this source tree.
 */}}
 
+{{/* gotype: entgo.io/ent/entc/gen.Graph */}}
+
 {{ define "config" }}
 
 {{ $pkg := base $.Config.Package }}
@@ -24,9 +26,12 @@ type config struct {
 	log func(...interface{})
 	// hooks to execute on mutations.
 	hooks *hooks
-	{{- with $tmpls := matchTemplate (printf "dialect/%s/config/fields/*" $.Storage) }}
-		{{- range $tmpl := $tmpls }}
-			{{ xtemplate $tmpl $ }}
+	{{- /* Support adding config fields from both global or dialect-specific templates. */}}
+	{{- range $prefix := list "" (printf "dialect/%s/" $.Storage) }}
+		{{- with $tmpls := matchTemplate (print $prefix "config/fields/*") }}
+			{{- range $tmpl := $tmpls }}
+				{{ xtemplate $tmpl $ }}
+			{{- end }}
 		{{- end }}
 	{{- end }}
 }
@@ -69,10 +74,13 @@ func Driver(driver dialect.Driver) Option {
 	}
 }
 
-{{ with $tmpls := matchTemplate (printf "dialect/%s/config/options/*" $.Storage) }}
-	{{ range $tmpl := $tmpls }}
-		{{ xtemplate $tmpl $ }}
-	{{ end }}
-{{ end }}
+{{- /* Support adding config options from both global or dialect-specific templates. */}}
+{{- range $prefix := list "" (printf "dialect/%s/" $.Storage) }}
+	{{- with $tmpls := matchTemplate (print $prefix "config/options/*") }}
+		{{- range $tmpl := $tmpls }}
+			{{ xtemplate $tmpl $ }}
+		{{- end }}
+	{{- end }}
+{{- end }}
 
 {{ end }}

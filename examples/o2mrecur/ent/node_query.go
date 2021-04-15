@@ -25,6 +25,7 @@ type NodeQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Node
@@ -52,6 +53,13 @@ func (nq *NodeQuery) Limit(limit int) *NodeQuery {
 // Offset adds an offset step to the query.
 func (nq *NodeQuery) Offset(offset int) *NodeQuery {
 	nq.offset = &offset
+	return nq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (nq *NodeQuery) Unique(unique bool) *NodeQuery {
+	nq.unique = &unique
 	return nq
 }
 
@@ -417,11 +425,14 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 		ids := make([]int, 0, len(nodes))
 		nodeids := make(map[int][]*Node)
 		for i := range nodes {
-			fk := nodes[i].node_children
-			if fk != nil {
-				ids = append(ids, *fk)
-				nodeids[*fk] = append(nodeids[*fk], nodes[i])
+			if nodes[i].node_children == nil {
+				continue
 			}
+			fk := *nodes[i].node_children
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
 		}
 		query.Where(node.IDIn(ids...))
 		neighbors, err := query.All(ctx)
@@ -497,6 +508,9 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   nq.sql,
 		Unique: true,
 	}
+	if unique := nq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := nq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, node.FieldID)
@@ -522,7 +536,7 @@ func (nq *NodeQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := nq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, node.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -541,7 +555,7 @@ func (nq *NodeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range nq.order {
-		p(selector, node.ValidColumn)
+		p(selector)
 	}
 	if offset := nq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -807,7 +821,7 @@ func (ngb *NodeGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(ngb.fields)+len(ngb.fns))
 	columns = append(columns, ngb.fields...)
 	for _, fn := range ngb.fns {
-		columns = append(columns, fn(selector, node.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(ngb.fields...)
 }

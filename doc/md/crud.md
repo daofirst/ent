@@ -262,6 +262,19 @@ if err != nil {
 }
 ```
 
+Update an entity and return a partial of it.
+
+```go
+pedro, err := client.Pet.
+	UpdateOneID(id).
+	SetAge(9).
+	SetName("pedro").
+	// Select allows selecting one or more fields (columns) of the returned entity.
+	// The default is selecting all fields defined in the entity schema.
+	Select(pet.FieldName).
+	Save(ctx)
+```
+
 ## Delete One 
 
 Delete an entity.
@@ -295,7 +308,7 @@ _, err := client.File.
 
 Each generated node type has its own type of mutation. For example, all [`User` builders](crud.md#create-an-entity), share
 the same generated `UserMutation` object.
-However, all builder types implement the generic <a target="_blank" href="https://pkg.go.dev/entgo.io/ent?tab=doc#Mutation">`ent.Mutation`<a> interface.
+However, all builder types implement the generic <a target="_blank" href="https://pkg.go.dev/entgo.io/ent?tab=doc#Mutation">`ent.Mutation`</a> interface.
 
 For example, in order to write a generic code that apply a set of methods on both `ent.UserCreate`
 and `ent.UserUpdate`, use the `UserMutation` object:

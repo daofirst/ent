@@ -26,6 +26,7 @@ type SpecQuery struct {
 	config
 	limit      *int
 	offset     *int
+	unique     *bool
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Spec
@@ -51,6 +52,13 @@ func (sq *SpecQuery) Limit(limit int) *SpecQuery {
 // Offset adds an offset step to the query.
 func (sq *SpecQuery) Offset(offset int) *SpecQuery {
 	sq.offset = &offset
+	return sq
+}
+
+// Unique configures the query builder to filter duplicate records on query.
+// By default, unique is set to true, and can be disabled using this method.
+func (sq *SpecQuery) Unique(unique bool) *SpecQuery {
+	sq.unique = &unique
 	return sq
 }
 
@@ -367,7 +375,6 @@ func (sq *SpecQuery) sqlAll(ctx context.Context) ([]*Spec, error) {
 			Predicate: func(s *sql.Selector) {
 				s.Where(sql.InValues(spec.CardPrimaryKey[0], fks...))
 			},
-
 			ScanValues: func() [2]interface{} {
 				return [2]interface{}{&sql.NullInt64{}, &sql.NullInt64{}}
 			},
@@ -386,7 +393,9 @@ func (sq *SpecQuery) sqlAll(ctx context.Context) ([]*Spec, error) {
 				if !ok {
 					return fmt.Errorf("unexpected node id in edges: %v", outValue)
 				}
-				edgeids = append(edgeids, inValue)
+				if _, ok := edges[inValue]; !ok {
+					edgeids = append(edgeids, inValue)
+				}
 				edges[inValue] = append(edges[inValue], node)
 				return nil
 			},
@@ -439,6 +448,9 @@ func (sq *SpecQuery) querySpec() *sqlgraph.QuerySpec {
 		From:   sq.sql,
 		Unique: true,
 	}
+	if unique := sq.unique; unique != nil {
+		_spec.Unique = *unique
+	}
 	if fields := sq.fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
 		_spec.Node.Columns = append(_spec.Node.Columns, spec.FieldID)
@@ -464,7 +476,7 @@ func (sq *SpecQuery) querySpec() *sqlgraph.QuerySpec {
 	if ps := sq.order; len(ps) > 0 {
 		_spec.Order = func(selector *sql.Selector) {
 			for i := range ps {
-				ps[i](selector, spec.ValidColumn)
+				ps[i](selector)
 			}
 		}
 	}
@@ -483,7 +495,7 @@ func (sq *SpecQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		p(selector)
 	}
 	for _, p := range sq.order {
-		p(selector, spec.ValidColumn)
+		p(selector)
 	}
 	if offset := sq.offset; offset != nil {
 		// limit is mandatory for offset clause. We start
@@ -749,7 +761,7 @@ func (sgb *SpecGroupBy) sqlQuery() *sql.Selector {
 	columns := make([]string, 0, len(sgb.fields)+len(sgb.fns))
 	columns = append(columns, sgb.fields...)
 	for _, fn := range sgb.fns {
-		columns = append(columns, fn(selector, spec.ValidColumn))
+		columns = append(columns, fn(selector))
 	}
 	return selector.Select(columns...).GroupBy(sgb.fields...)
 }
